@@ -41,6 +41,8 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
   const [invalidMoveMsg, setInvalidMoveMsg] = useState<string | null>(null);
   const invalidMoveTimeoutRef = useRef<number | null>(null);
 
+  const isNetworked = Boolean(socket && roomCode);
+
   const showInvalidMove = (message = "Invalid move") => {
     setInvalidMoveMsg(message);
     if (invalidMoveTimeoutRef.current != null) {
@@ -151,7 +153,10 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
 
     const currentTurn = game.turn() as TurnColor;
     // In a networked game, only the player whose color is to move may select.
-    if (socket && roomCode && playerColor !== currentTurn) return;
+    if (isNetworked) {
+      if (!playerColor) return;
+      if (playerColor !== currentTurn) return;
+    }
     const piece = game.get(square as any) as { color: TurnColor } | null;
     const pieceColor = piece?.color ?? null;
 
@@ -184,10 +189,16 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
     if (isGameOver) return;
 
     const currentTurn = game.turn() as TurnColor;
-    // In a networked game, only the player whose color is to move may act.
-    if (socket && roomCode && playerColor !== currentTurn) {
-      showInvalidMove();
-      return;
+    // In a networked game, only the active player may act.
+    if (isNetworked) {
+      if (!playerColor) {
+        showInvalidMove("You are a spectator in this game");
+        return;
+      }
+      if (playerColor !== currentTurn) {
+        showInvalidMove("Not your turn");
+        return;
+      }
     }
     const gameCopy = new Chess(game.fen());
     const piece = gameCopy.get(square as any) as { color: TurnColor } | null;
@@ -242,9 +253,15 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
     if (isGameOver) return false;
 
     const currentTurn = game.turn() as TurnColor;
-    if (socket && roomCode && playerColor !== currentTurn) {
-      showInvalidMove();
-      return false;
+    if (isNetworked) {
+      if (!playerColor) {
+        showInvalidMove("You are a spectator in this game");
+        return false;
+      }
+      if (playerColor !== currentTurn) {
+        showInvalidMove("Not your turn");
+        return false;
+      }
     }
 
     const gameCopy = new Chess(game.fen());
@@ -310,6 +327,16 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
     };
   }, [socket, roomCode]);
 
+  const boardOrientation = useMemo<"white" | "black">(
+    () => {
+      // In a networked game, orient the board so each player sees their own
+      // pieces at the bottom. In local/preview mode, default to white.
+      if (!isNetworked) return "white";
+      return playerColor === "b" ? "black" : "white";
+    },
+    [isNetworked, playerColor],
+  );
+
   return (
     <div className="flex flex-col gap-3 items-center">
       <div className="flex w-full max-w-[min(100vw-48px,480px)] items-center justify-between text-xs text-foreground/70">
@@ -323,10 +350,11 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
         style={{ maxWidth: boardSize }}
       >
         <ChessboardAny
-          options={{
-            id: "fun-together-chess-board",
-            position: game.fen(),
-            boardStyle: {
+            options={{
+              id: "fun-together-chess-board",
+              position: game.fen(),
+              orientation: boardOrientation,
+              boardStyle: {
               borderRadius: "12px",
               boxShadow: "0 2px 10px rgba(0,0,0,0.6)",
             },
@@ -336,7 +364,8 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
             // networked game. In preview mode (no socket/room), allow
             // dragging for both sides.
             allowDragging:
-              !isGameOver && (!socket || !roomCode ? true : playerColor === game.turn()),
+              !isGameOver &&
+              (!isNetworked ? true : Boolean(playerColor && playerColor === game.turn())),
              onSquareClick: ({ square }: { square: string; piece: any | null }) => {
               if (!square) return;
               handleSquareClick(square);
