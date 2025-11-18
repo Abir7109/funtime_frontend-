@@ -6,6 +6,7 @@ import { useSocket } from "@/hooks/useSocket";
 import { GameKey } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
 import LudoBoard from "@/components/LudoBoard";
+import LudoJsBoard from "@/components/LudoJsBoard";
 
 interface ChatMessage {
   from: string;
@@ -125,7 +126,8 @@ export default function RoomPage() {
             {gameKey === "chess" ? (
               <ChessBoard socket={socket} roomCode={roomCode} />
             ) : (
-              <LudoBoard playerCount={playerCount} />
+              // Use the same designed Ludo board as the preview page.
+              <LudoJsBoard />
             )}
           </div>
 
