@@ -21,12 +21,15 @@ function getBoardSizeFromWindow(): number {
   return Math.min(window.innerWidth - 48, 480);
 }
 
+type PlayerColor = "w" | "b" | null;
+
 interface ChessBoardProps {
   socket?: Socket | null;
   roomCode?: string;
+  playerColor?: PlayerColor;
 }
 
-export default function ChessBoard({ socket, roomCode }: ChessBoardProps) {
+export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoardProps) {
   const [game, setGame] = useState<Chess>(() => createInitialGame());
   // Start with a fixed value so SSR and initial client render match; adjust in
   // an effect once the window size is known.
@@ -147,6 +150,8 @@ export default function ChessBoard({ socket, roomCode }: ChessBoardProps) {
     if (isGameOver) return;
 
     const currentTurn = game.turn() as TurnColor;
+    // In a networked game, only the player whose color is to move may select.
+    if (socket && roomCode && playerColor && playerColor !== currentTurn) return;
     const piece = game.get(square as any) as { color: TurnColor } | null;
     const pieceColor = piece?.color ?? null;
 
@@ -179,6 +184,10 @@ export default function ChessBoard({ socket, roomCode }: ChessBoardProps) {
     if (isGameOver) return;
 
     const currentTurn = game.turn() as TurnColor;
+    if (socket && roomCode && playerColor && playerColor !== currentTurn) {
+      showInvalidMove();
+      return;
+    }
     const gameCopy = new Chess(game.fen());
     const piece = gameCopy.get(square as any) as { color: TurnColor } | null;
     const pieceColor = piece?.color ?? null;
@@ -226,6 +235,12 @@ export default function ChessBoard({ socket, roomCode }: ChessBoardProps) {
 
   const handlePieceDrop = (source: string, target: string): boolean => {
     if (isGameOver) return false;
+
+    const currentTurn = game.turn() as TurnColor;
+    if (socket && roomCode && playerColor && playerColor !== currentTurn) {
+      showInvalidMove();
+      return false;
+    }
 
     const gameCopy = new Chess(game.fen());
     const move = tryMove(gameCopy, source, target);
@@ -312,8 +327,12 @@ export default function ChessBoard({ socket, roomCode }: ChessBoardProps) {
             },
             squareStyles,
             animationDurationInMs: 200,
-            allowDragging: !isGameOver,
-            onSquareClick: ({ square }: { square: string; piece: any | null }) => {
+            // Only allow dragging for the player whose turn it is in a
+            // networked game. In preview mode (no socket/room), allow
+            // dragging for both sides.
+            allowDragging:
+              !isGameOver && (!socket || !roomCode || playerColor == null || playerColor === game.turn()),
+             onSquareClick: ({ square }: { square: string; piece: any | null }) => {
               if (!square) return;
               handleSquareClick(square);
             },

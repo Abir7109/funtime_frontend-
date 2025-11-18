@@ -30,11 +30,16 @@ export default function RoomPage() {
   const [chatInput, setChatInput] = useState("");
   const [systemMsg, setSystemMsg] = useState("");
   const [celebrate, setCelebrate] = useState(false);
+  const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
 
   useEffect(() => {
     if (!socket || !connected || !roomCode) return;
 
     socket.emit("join_room", roomCode, username);
+
+    socket.on("chess_role", ({ color }: { color: "w" | "b" | null }) => {
+      setPlayerColor(color ?? null);
+    });
 
     socket.on("system", (msg: string) => {
       setSystemMsg(msg);
@@ -51,6 +56,7 @@ export default function RoomPage() {
     });
 
     return () => {
+      socket.off("chess_role");
       socket.off("system");
       socket.off("chat");
       socket.off("game_started");
@@ -124,7 +130,7 @@ export default function RoomPage() {
               </span>
             </div>
             {gameKey === "chess" ? (
-              <ChessBoard socket={socket} roomCode={roomCode} />
+              <ChessBoard socket={socket} roomCode={roomCode} playerColor={playerColor} />
             ) : (
               // Use the same designed Ludo board as the preview page.
               <LudoJsBoard />
