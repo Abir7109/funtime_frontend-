@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import { GameKey } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
-import LudoBoard from "@/components/LudoBoard";
+import LudoJsBoard from "@/components/LudoJsBoard";
 
 interface ChatMessage {
   from: string;
@@ -137,12 +137,7 @@ export default function RoomPage() {
             {gameKey === "chess" ? (
               <ChessBoard socket={socket} roomCode={roomCode} playerColor={playerColor} />
             ) : (
-              <LudoBoard
-                playerCount={playerCount}
-                socket={socket}
-                roomCode={roomCode}
-                playerIndex={ludoIndex ?? undefined}
-              />
+              <LudoJsBoard />
             )}
           </div>
 
