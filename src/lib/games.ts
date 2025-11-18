@@ -1,4 +1,4 @@
-export type GameKey = "ludo" | "chess";
+export type GameKey = "chess";
 
 export interface GameConfig {
   key: GameKey;
@@ -12,16 +12,6 @@ export interface GameConfig {
 }
 
 export const games: GameConfig[] = [
-  {
-    key: "ludo",
-    title: "Ludo",
-    icon: "🎲",
-    badge: "Family favourite",
-    desc: "Race your tokens home while blocking your friends. Easy to explain, hard to stop playing.",
-    players: "2–4 players",
-    time: "15–30 min",
-    accent: "from-yellow to-orange",
-  },
   {
     key: "chess",
     title: "Chess",

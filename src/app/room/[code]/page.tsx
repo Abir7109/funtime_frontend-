@@ -5,7 +5,6 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import { GameKey } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
-import LudoBoard from "@/components/LudoBoard";
 
 interface ChatMessage {
   from: string;
@@ -16,7 +15,6 @@ interface RoomPlayerInfo {
   id: string;
   username: string;
   color: "w" | "b" | null;
-  ludoIndex: number | null;
 }
 
 export default function RoomPage() {
@@ -24,9 +22,7 @@ export default function RoomPage() {
   const searchParams = useSearchParams();
   const roomCode = (params.code as string)?.toUpperCase() || "";
   const fromQuery = (searchParams.get("username") || "").trim();
-  const gameKey = (searchParams.get("game") as GameKey) || "ludo";
-  const playersParam = (searchParams.get("players") || "").trim();
-  const playerCount: 2 | 4 = playersParam === "4" ? 4 : 2;
+  const gameKey: GameKey = "chess";
   const { socket, connected } = useSocket();
 
   const [username] = useState(
@@ -37,7 +33,6 @@ export default function RoomPage() {
   const [systemMsg, setSystemMsg] = useState("");
   const [celebrate, setCelebrate] = useState(false);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
-  const [ludoIndex, setLudoIndex] = useState<number | null>(null);
   const [roomPlayersState, setRoomPlayersState] = useState<RoomPlayerInfo[]>([]);
 
   useEffect(() => {
@@ -49,9 +44,7 @@ export default function RoomPage() {
       setPlayerColor(color ?? null);
     });
 
-    socket.on("ludo_role", ({ index }: { index: number | null }) => {
-      setLudoIndex(index ?? null);
-    });
+    // Ludo roles are no longer used since Ludo game was removed.
 
     socket.on("system", (msg: string) => {
       setSystemMsg(msg);
@@ -73,7 +66,7 @@ export default function RoomPage() {
 
     return () => {
       socket.off("chess_role");
-      socket.off("ludo_role");
+      // Ludo roles listener removed.
       socket.off("system");
       socket.off("chat");
       socket.off("game_started");
@@ -87,10 +80,7 @@ export default function RoomPage() {
     setChatInput("");
   };
 
-  const chooseLudoRole = (index: 0 | 1) => {
-    if (!socket || !roomCode) return;
-    socket.emit("ludo_choose_role", roomCode, index);
-  };
+  // Ludo role selection has been removed along with the Ludo game.
 
   return (
     <div className="min-h-screen bg-animated-gradient p-6">
@@ -145,7 +135,7 @@ export default function RoomPage() {
               <span>
                 Shared game board
                 <span className="ml-2 rounded-full bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-foreground/60">
-                  {gameKey === "chess" ? "Chess" : "Ludo"}
+                  Chess
                 </span>
               </span>
               <span className="inline-flex items-center rounded-full bg-black/40 px-2.5 py-1 font-mono text-[11px]">
@@ -153,52 +143,7 @@ export default function RoomPage() {
               </span>
             </div>
 
-            {gameKey === "ludo" && (
-              <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/70">
-                <span className="mr-1 font-semibold uppercase tracking-[0.25em] text-foreground/60">
-                  Ludo color
-                </span>
-                {[0, 1].map((idx) => {
-                  const holder = roomPlayersState.find((p) => p.ludoIndex === idx) || null;
-                  const isMe = ludoIndex === idx;
-                  const takenByOther = !!holder && !isMe;
-                  const disabled = !socket || !connected || takenByOther;
-                  const label = idx === 0 ? "Player 1" : "Player 2";
-                  const colorSwatch = idx === 0 ? "bg-sky" : "bg-teal";
-
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      disabled={disabled}
-                      onClick={() => chooseLudoRole(idx as 0 | 1)}
-                      className={`inline-flex items-center gap-1 rounded-full border border-foreground/25 px-2.5 py-1 text-[11px] font-semibold transition ${
-                        isMe ? "bg-cyan/20 text-cyan" : "bg-black/40 text-foreground/80"
-                      } disabled:opacity-60`}
-                    >
-                      <span className={`h-3 w-3 rounded-full ${colorSwatch}`} />
-                      <span>{label}</span>
-                      {holder && (
-                        <span className="ml-1 text-[10px] text-foreground/60">
-                          {isMe ? "(You)" : `(${holder.username})`}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {gameKey === "chess" ? (
-              <ChessBoard socket={socket} roomCode={roomCode} playerColor={playerColor} />
-            ) : (
-              <LudoBoard
-                playerCount={playerCount}
-                socket={socket}
-                roomCode={roomCode}
-                playerIndex={ludoIndex ?? null}
-              />
-            )}
+            <ChessBoard socket={socket} roomCode={roomCode} playerColor={playerColor} />
           </div>
 
           {/* Chat panel */}

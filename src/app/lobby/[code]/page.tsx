@@ -15,9 +15,7 @@ export default function LobbyPage() {
   const searchParams = useSearchParams();
   const roomCode = (params.code as string)?.toUpperCase() || "";
   const initialUsername = (searchParams.get("username") || "").trim();
-  const gameKey = (searchParams.get("game") || "ludo").trim();
-  const playersParam = (searchParams.get("players") || "").trim();
-  const defaultPlayerCount: 2 | 4 = playersParam === "4" ? 4 : 2;
+  const gameKey = (searchParams.get("game") || "chess").trim();
   const { socket, connected } = useSocket();
 
   const [players, setPlayers] = useState<RoomPlayer[]>([]);
@@ -42,16 +40,10 @@ export default function LobbyPage() {
     socket.on("game_started", (config?: { players?: number; game?: string }) => {
       setStarting(false);
       const effectiveGameKey = (config?.game as string) || gameKey;
-      const playersFromConfig =
-        effectiveGameKey === "ludo" && config?.players === 4 ? 4 : 2;
       const usernameParam = encodeURIComponent(initialUsername);
-      const gameParam = encodeURIComponent(effectiveGameKey);
-      const playersQuery =
-        effectiveGameKey === "ludo"
-          ? `&players=${encodeURIComponent(String(playersFromConfig))}`
-          : "";
+      const gameParam = encodeURIComponent("chess");
       router.push(
-        `/room/${roomCode}?username=${usernameParam}&game=${gameParam}${playersQuery}`,
+        `/room/${roomCode}?username=${usernameParam}&game=${gameParam}`,
       );
     });
 
@@ -65,10 +57,7 @@ export default function LobbyPage() {
   const handleStartGame = () => {
     if (!socket || !roomCode) return;
     setStarting(true);
-    const payload =
-      gameKey === "ludo"
-        ? { players: defaultPlayerCount, game: gameKey }
-        : { game: gameKey };
+    const payload = { game: gameKey };
     socket.emit("start_game", roomCode, payload);
   };
 

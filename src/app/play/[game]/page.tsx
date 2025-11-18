@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { games } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
-import LudoJsBoard from "@/components/LudoJsBoard";
 
 export default function PlayGamePreviewPage() {
   const params = useParams();
@@ -78,11 +77,7 @@ export default function PlayGamePreviewPage() {
               Playable demo (local)
             </span>
           </div>
-          {game.key === "chess" ? (
-            <ChessBoard />
-          ) : (
-            <LudoJsBoard />
-          )}
+          <ChessBoard />
         </div>
       </div>
     </div>

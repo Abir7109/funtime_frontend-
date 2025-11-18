@@ -20,26 +20,22 @@ function RoomsContent() {
   const [game, setGame] = useState(presetGame);
   const [joinCode, setJoinCode] = useState("");
   const [createdCode, setCreatedCode] = useState<string | null>(null);
-  const [ludoPlayers, setLudoPlayers] = useState<2 | 4>(2);
   const [activeTab, setActiveTab] = useState<"create" | "join">(
     (presetMode as "create" | "join") || "create",
   );
 
-  const canCreate = username.trim() !== "" && game !== "";
+  const canCreate = username.trim() !== "";
   const canJoin = username.trim() !== "" && joinCode.trim().length === 6;
 
   const handleCreate = () => {
     const code = generateCode();
     setCreatedCode(code);
-    // Pass the chosen username, game, and (for Ludo) player count into the lobby.
     const usernameParam = encodeURIComponent(username.trim());
-    const gameParam = encodeURIComponent(game || "ludo");
-    const playersParam =
-      game === "ludo" ? `&players=${encodeURIComponent(String(ludoPlayers))}` : "";
+    const gameParam = encodeURIComponent("chess");
     setTimeout(
       () =>
         router.push(
-          `/lobby/${code}?username=${usernameParam}&game=${gameParam}${playersParam}`,
+          `/lobby/${code}?username=${usernameParam}&game=${gameParam}`,
         ),
       1400,
     );
@@ -47,7 +43,7 @@ function RoomsContent() {
 
   const handleJoin = () => {
     const usernameParam = encodeURIComponent(username.trim());
-    const gameParam = encodeURIComponent(game || "ludo");
+    const gameParam = encodeURIComponent("chess");
     router.push(`/lobby/${joinCode}?username=${usernameParam}&game=${gameParam}`);
   };
 
@@ -121,48 +117,12 @@ function RoomsContent() {
                 <label className="mb-1 block text-xs font-medium text-foreground/70">
                   Game
                 </label>
-                <select
+                <input
                   className="w-full rounded-lg border border-foreground/20 bg-black/30 px-3 py-2 text-sm text-foreground outline-none focus:border-cyan"
-                  value={game}
-                  onChange={(e) => setGame(e.target.value)}
-                >
-                  <option value="">Choose…</option>
-                  <option value="ludo">Ludo</option>
-                  <option value="chess">Chess</option>
-                </select>
+                  value="Chess"
+                  disabled
+                />
               </div>
-
-              {game === "ludo" && (
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-foreground/70">
-                    Players in this room
-                  </label>
-                  <div className="mt-1 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setLudoPlayers(2)}
-                      className={`flex-1 rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                        ludoPlayers === 2
-                          ? "border-yellow bg-yellow text-navy"
-                          : "border-foreground/30 bg-black/40 text-foreground/80 hover:bg-black/60"
-                      }`}
-                    >
-                      2 players (1v1)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLudoPlayers(4)}
-                      className={`flex-1 rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                        ludoPlayers === 4
-                          ? "border-yellow bg-yellow text-navy"
-                          : "border-foreground/30 bg-black/40 text-foreground/80 hover:bg-black/60"
-                      }`}
-                    >
-                      4 players (2v2)
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <button
                 className="mt-1 w-full rounded-full bg-gradient-to-r from-orange to-yellow px-4 py-2.5 text-sm font-semibold text-navy shadow-lg shadow-orange/40 transition hover:scale-[1.02] disabled:opacity-60"
