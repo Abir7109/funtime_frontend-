@@ -1,26 +1,499 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base light mode */
+  --background: #020617;
+  --foreground: #f9fafb;
+
+  /* New vibrant palette */
+  --orange: #fb8500; /* bright orange */
+  --yellow: #ffb703; /* bright yellow */
+  --navy: #020617; /* deep navy */
+  --cyan: #22d3ee; /* bright cyan */
+  --sky: #38bdf8; /* light sky blue */
+  --coral: #fb7185; /* accent pink/coral */
+  --sand: #facc15; /* warm yellow sand */
+  --teal: #14b8a6; /* teal for game area */
 }
 
 @theme inline {
+  /* Map CSS vars to Tailwind tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-orange: var(--orange);
+  --color-yellow: var(--yellow);
+  --color-navy: var(--navy);
+  --color-cyan: var(--cyan);
+  --color-sky: var(--sky);
+  --color-coral: var(--coral);
+  --color-sand: var(--sand);
+  --color-teal: var(--teal);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #020617;
+    --foreground: #f9fafb;
   }
+}
+
+/* Animated gradient background utility */
+@keyframes floatGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.bg-animated-gradient {
+  background: radial-gradient(circle at top left, var(--sky) 0, transparent 45%),
+    radial-gradient(circle at bottom right, var(--cyan) 0, transparent 55%),
+    linear-gradient(135deg, var(--navy), #020f2a 45%, #020617 100%);
+  background-size: 160% 160%;
+  animation: floatGradient 18s ease-in-out infinite;
+}
+
+/* Soft glass card style */
+.glass-card {
+  background-color: color-mix(in srgb, var(--background) 75%, #000 25%);
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent 88%);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* Pulse animation for CTAs */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2.6s ease-in-out infinite;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Ludo board design (scoped to .ludo-root so it does not affect the whole app) */
+.ludo-root {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+.ludo-root .ludo {
+  width: 750px;
+  height: 750px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  background-color: #ffffff;
+  position: relative;
+}
+
+.ludo-root .blue,
+.ludo-root .red,
+.ludo-root .yellow,
+.ludo-root .green {
+  width: 300px;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Quadrant background colors */
+.ludo-root .blue {
+  background-color: royalblue;
+}
+
+.ludo-root .red {
+  background-color: red;
+}
+
+.ludo-root .yellow {
+  background-color: yellow;
+}
+
+.ludo-root .green {
+  background-color: green;
+}
+
+/* Inner home boxes */
+.ludo-root .box {
+  background-color: #ffffff;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+.ludo-root .box .insidebox {
+  width: 60px;
+  height: 60px;
+  margin: 20px;
+}
+
+/* Text and background helper colors */
+.ludo-root .blueFont {
+  color: royalblue;
+}
+
+.ludo-root .redFont {
+  color: red;
+}
+
+.ludo-root .yellowFont {
+  color: yellow;
+}
+
+.ludo-root .greenFont {
+  color: green;
+}
+
+.ludo-root .blueBackground {
+  background-color: royalblue;
+}
+
+.ludo-root .redBackground {
+  background-color: red;
+}
+
+.ludo-root .yellowBackground {
+  background-color: yellow;
+}
+
+.ludo-root .greenBackground {
+  background-color: green;
+}
+
+/* Path squares */
+.ludo-root .square {
+  width: 48px;
+  height: 48px;
+  border: 1px solid #000000;
+  font-size: 30px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ludo-root .squareContainer {
+  display: flex;
+}
+
+.ludo-root .row {
+  width: 750px;
+  height: 150px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ludo-root .row1 {
+  display: flex;
+}
+
+/* Center crown area */
+.ludo-root .ludoCenter {
+  font-size: 100px;
+  color: #ffd700;
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* === ludo-js board styles (scoped) === */
+.ludo-js-root * {
+  box-sizing: border-box;
+}
+
+.ludo-js-root .ludo-container {
+  width: 450px;
+  margin: 20px auto;
+}
+
+.ludo-js-root .ludo-container .ludo {
+  height: 450px;
+  width: 100%;
+  /* Use local copy of the original ludo-js board background from public/ */
+  background-image: url('/ludo-bg.jpg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.ludo-js-root .player-pieces {
+  height: 100%;
+  width: 100%;
+}
+
+.ludo-js-root .player-piece {
+  /* Default center offset; overridden per piece index so stacked pieces separate */
+  --offset-x: 50%;
+  --offset-y: 50%;
+
+  width: 4.2%;
+  height: 4.2%;
+  border-radius: 999px;
+  position: absolute;
+  transform: translate(var(--offset-x), var(--offset-y));
+  border: 2px solid rgba(0, 0, 0, 0.55);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.35),
+    inset 0 1px 2px rgba(255, 255, 255, 0.6);
+  background-image: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.8), transparent 55%);
+  transition:
+    top 0.16s linear,
+    left 0.16s linear,
+    transform 0.18s ease-out,
+    box-shadow 0.18s ease-out,
+    border-color 0.18s ease-out;
+  z-index: 1;
+}
+
+/* Offset each piece index slightly so stacked pieces don't fully overlap */
+.ludo-js-root .player-piece[data-piece="0"] {
+  --offset-x: 46%;
+  --offset-y: 46%;
+}
+
+.ludo-js-root .player-piece[data-piece="1"] {
+  --offset-x: 54%;
+  --offset-y: 46%;
+}
+
+.ludo-js-root .player-piece[data-piece="2"] {
+  --offset-x: 46%;
+  --offset-y: 54%;
+}
+
+.ludo-js-root .player-piece[data-piece="3"] {
+  --offset-x: 54%;
+  --offset-y: 54%;
+}
+
+.ludo-js-root .player-piece.highlight {
+  cursor: pointer;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.75),
+    0 0 12px rgba(255, 255, 255, 0.8),
+    0 4px 10px rgba(0, 0, 0, 0.6);
+  transform: translate(var(--offset-x), var(--offset-y)) scale(1.18);
+  animation: ludo-js-pulse 0.7s ease-in-out infinite;
+}
+
+.ludo-js-root .player-piece.moving {
+  transform: translate(var(--offset-x), calc(var(--offset-y) - 5%)) scale(1.06);
+}
+
+@keyframes ludo-js-pulse {
+  0% {
+    transform: translate(var(--offset-x), var(--offset-y)) scale(1);
+  }
+  50% {
+    transform: translate(var(--offset-x), var(--offset-y)) scale(1.18);
+  }
+  100% {
+    transform: translate(var(--offset-x), var(--offset-y)) scale(1);
+  }
+}
+
+@keyframes ludo-js-spin {
+  0% {
+    transform: translate(var(--offset-x), var(--offset-y)) rotate(0deg);
+  }
+  50% {
+    transform: translate(var(--offset-x), var(--offset-y)) rotate(180deg) scale(1.4);
+  }
+  100% {
+    transform: translate(var(--offset-x), var(--offset-y)) rotate(360deg);
+  }
+}
+
+.ludo-js-root [data-player-id="P1"].player-piece {
+  background-color: #2eafff;
+}
+
+.ludo-js-root [data-player-id="P2"].player-piece {
+  background-color: #00b550;
+}
+
+.ludo-js-root .player-base {
+  width: 40%;
+  height: 40%;
+  border: 30px solid;
+  position: absolute;
+}
+
+.ludo-js-root .player-bases [data-player-id="P1"].player-base {
+  bottom: 0;
+  left: 0;
+  border-color: #1295e7;
+}
+
+.ludo-js-root .player-bases [data-player-id="P2"].player-base {
+  top: 0;
+  right: 0;
+  border-color: #049645;
+}
+
+.ludo-js-root .player-base.highlight {
+  animation: ludo-js-border-blink 0.7s infinite ease-in-out;
+}
+
+@keyframes ludo-js-border-blink {
+  50% {
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+/************************
+ * LUDO-JS BUTTONS + MOBILE
+ ************************/
+
+.ludo-js-root .btn {
+  position: relative;
+  padding: 10px 26px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  overflow: hidden;
+  transform: translateZ(0);
+  transition:
+    transform 0.15s ease-out,
+    box-shadow 0.15s ease-out,
+    opacity 0.15s ease-out;
+}
+
+.ludo-js-root .btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+  box-shadow: none;
+  transform: none;
+}
+
+.ludo-js-root .btn-dice {
+  background-image: linear-gradient(135deg, #00e676, #00bfa5);
+  color: #031b2c;
+  box-shadow:
+    0 8px 15px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.15);
+  /* extra left padding so the emoji has its own space */
+  padding-left: 42px;
+}
+
+.ludo-js-root .btn-dice::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.9), transparent 55%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.ludo-js-root .btn-dice::after {
+  content: "🎲";
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+}
+
+.ludo-js-root .btn-dice span {
+  position: relative;
+  z-index: 1; /* keep text above the glow/emoji layer */
+}
+
+.ludo-js-root .btn-dice:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.ludo-js-root .btn-dice:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+/* Mobile tweaks for the ludo-js preview / board */
+@media (max-width: 480px) {
+  .ludo-js-root .ludo-container {
+    width: 100%;
+    max-width: 340px;
+    margin: 12px auto;
+  }
+
+  .ludo-js-root .ludo-container .ludo {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1; /* keep the board perfectly square on mobile */
+  }
+
+  /* Slightly smaller pieces and thinner bases so they don't overflow */
+  .ludo-js-root .player-piece {
+    width: 3.4%;
+    height: 3.4%;
+  }
+
+  .ludo-js-root .player-base {
+    border-width: 18px;
+  }
+
+  .ludo-js-root .row {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ludo-js-root .btn {
+    padding: 8px 20px;
+    font-size: 14px;
+  }
+
+  .ludo-js-root .btn-dice::after {
+    display: none; /* hide emoji on very small screens to avoid overlap */
+  }
+}
+
+.ludo-js-root .row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.ludo-js-root .dice-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Container that Lottie renders into */
+.ludo-js-root .dice {
+  width: 60px;
+  height: 60px;
+}
+
+.ludo-js-root .dice-number {
+  font-size: 20px;
+  font-weight: 700;
 }
