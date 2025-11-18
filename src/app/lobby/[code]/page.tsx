@@ -41,7 +41,7 @@ export default function LobbyPage() {
       setStarting(false);
       const effectiveGameKey = (config?.game as string) || gameKey;
       const usernameParam = encodeURIComponent(initialUsername);
-      const gameParam = encodeURIComponent("chess");
+      const gameParam = encodeURIComponent(effectiveGameKey || "chess");
       router.push(
         `/room/${roomCode}?username=${usernameParam}&game=${gameParam}`,
       );

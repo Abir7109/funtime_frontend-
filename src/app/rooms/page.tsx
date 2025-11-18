@@ -17,7 +17,6 @@ function RoomsContent() {
   const presetMode = sp.get("mode") || "";
 
   const [username, setUsername] = useState("");
-  const [game, setGame] = useState(presetGame);
   const [joinCode, setJoinCode] = useState("");
   const [createdCode, setCreatedCode] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"create" | "join">(

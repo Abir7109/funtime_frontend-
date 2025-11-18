@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { games } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
+import { ChessStartAnimation } from "@/components/ChessStartAnimation";
 
 export default function PlayGamePreviewPage() {
   const params = useParams();
   const gameKey = (params.game as string) || "";
+  const [showStartAnim, setShowStartAnim] = useState(gameKey === "chess");
 
   const game = useMemo(() => games.find((g) => g.key === gameKey), [gameKey]);
 
@@ -29,6 +31,9 @@ export default function PlayGamePreviewPage() {
 
   return (
     <div className="min-h-screen bg-animated-gradient p-6">
+      {gameKey === "chess" && showStartAnim && (
+        <ChessStartAnimation onDone={() => setShowStartAnim(false)} timeoutMs={2000} />
+      )}
       <div className="mx-auto max-w-4xl space-y-5">
         {/* Top bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-black/40 px-5 py-3 shadow-lg backdrop-blur">

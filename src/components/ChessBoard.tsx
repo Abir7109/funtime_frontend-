@@ -1,5 +1,11 @@
 "use client";
 
+/*
+ * chess.js and react-chessboard expose a few loose APIs that are easiest
+ * to integrate with `any` in small, well-contained spots.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Chess } from "chess.js";
@@ -111,12 +117,12 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
       if (inCheckmate) {
         const loser = chessAny.turn?.() as TurnColor;
         const winner = loser === "w" ? "Black" : "White";
-        return `Checkmate 9 ${winner} wins`;
+        return `Checkmate \u00019 ${winner} wins`;
       }
-      if (inStalemate) return "Game over 9 Stalemate";
-      if (insufficientMaterial) return "Game over 9 Draw by insufficient material";
-      if (threefold) return "Game over 9 Draw by threefold repetition";
-      if (isDraw) return "Game over 9 Draw";
+      if (inStalemate) return "Game over \u00019 Stalemate";
+      if (insufficientMaterial) return "Game over \u00019 Draw by insufficient material";
+      if (threefold) return "Game over \u00019 Draw by threefold repetition";
+      if (isDraw) return "Game over \u00019 Draw";
       return "Game over";
     }
 
@@ -178,7 +184,6 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
     } catch (err) {
       // chess.js throws on invalid moves; we handle that gracefully.
       if (process.env.NODE_ENV !== "production") {
-        // eslint-disable-next-line no-console
         console.warn("Invalid move caught in tryMove", { from, to }, err);
       }
       return null;
@@ -305,6 +310,9 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
 
     const handlePosition = ({ fen }: { fen: string }) => {
       if (!fen) return;
+      // If this update doesn't change the position we already have, skip
+      // re-creating the Chess instance to avoid double renders.
+      if (fen === game.fen()) return;
       const newGame = new Chess(fen);
       setGame(newGame);
       setTurn(newGame.turn() as TurnColor);
@@ -325,7 +333,7 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
       socket.off("chess_position", handlePosition);
       socket.off("chess_invalid", handleInvalid);
     };
-  }, [socket, roomCode]);
+  }, [socket, roomCode, game]);
 
   const boardOrientation = useMemo<"white" | "black">(
     () => {
@@ -346,7 +354,7 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
         </span>
       </div>
       <div
-        className="overflow-hidden rounded-2xl border border-foreground/20 bg-black/60 shadow-inner mx-auto w-full max-w-[min(100vw-48px,480px)]"
+        className="relative overflow-hidden rounded-2xl border border-foreground/20 bg-black/60 shadow-inner mx-auto w-full max-w-[min(100vw-48px,480px)]"
         style={{ maxWidth: boardSize }}
       >
         <ChessboardAny
@@ -359,7 +367,7 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
               boxShadow: "0 2px 10px rgba(0,0,0,0.6)",
             },
             squareStyles,
-            animationDurationInMs: 200,
+            animationDurationInMs: 100,
             // Only allow dragging for the player whose color is to move in a
             // networked game. In preview mode (no socket/room), allow
             // dragging for both sides.
@@ -384,6 +392,18 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
             }) => handlePieceDrop(sourceSquare, targetSquare ?? sourceSquare),
           }}
         />
+        {isGameOver && (
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+            <div className="game-over-pop pointer-events-auto relative mx-4 max-w-xs rounded-3xl bg-black/85 px-5 py-4 text-center shadow-2xl ring-1 ring-white/10">
+              <p className="text-sm font-semibold text-sand">
+                {statusText.startsWith("Checkmate") ? "Checkmate" : "Game over"}
+              </p>
+              <p className="mt-1 text-xs text-foreground/70">
+                {statusText}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
       <div className="flex w-full max-w-[min(100vw-48px,480px)] items-center justify-between text-[11px] text-foreground/60">
         <p className={invalidMoveMsg ? "text-[11px] text-orange" : undefined}>

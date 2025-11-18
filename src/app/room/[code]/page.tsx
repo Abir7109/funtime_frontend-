@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
-import { GameKey } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
+import { ChessStartAnimation } from "@/components/ChessStartAnimation";
 
 interface ChatMessage {
   from: string;
@@ -22,7 +22,6 @@ export default function RoomPage() {
   const searchParams = useSearchParams();
   const roomCode = (params.code as string)?.toUpperCase() || "";
   const fromQuery = (searchParams.get("username") || "").trim();
-  const gameKey: GameKey = "chess";
   const { socket, connected } = useSocket();
 
   const [username] = useState(
@@ -33,7 +32,6 @@ export default function RoomPage() {
   const [systemMsg, setSystemMsg] = useState("");
   const [celebrate, setCelebrate] = useState(false);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
-  const [roomPlayersState, setRoomPlayersState] = useState<RoomPlayerInfo[]>([]);
 
   useEffect(() => {
     if (!socket || !connected || !roomCode) return;
@@ -56,12 +54,14 @@ export default function RoomPage() {
     });
 
     socket.on("game_started", () => {
+      // Show a short start animation + confetti when the game begins.
       setCelebrate(true);
-      setTimeout(() => setCelebrate(false), 3000);
+      setTimeout(() => setCelebrate(false), 2000);
     });
 
-    socket.on("room_players", (players: RoomPlayerInfo[]) => {
-      setRoomPlayersState(players || []);
+    socket.on("room_players", (_players: RoomPlayerInfo[]) => {
+      // Room players list is currently not rendered here; we keep listening so
+      // the server can still broadcast without causing errors.
     });
 
     return () => {
@@ -111,14 +111,7 @@ export default function RoomPage() {
         </div>
 
         {celebrate && (
-          <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center">
-            <div className="pointer-events-auto rounded-3xl bg-black/70 px-6 py-4 text-center shadow-2xl">
-              <p className="text-sm font-semibold text-sand">Game on! 🎉</p>
-              <p className="mt-1 text-xs text-foreground/70">
-                Moves will now show up live for everyone in this room.
-              </p>
-            </div>
-          </div>
+          <ChessStartAnimation onDone={() => setCelebrate(false)} timeoutMs={2000} />
         )}
 
         {systemMsg && (

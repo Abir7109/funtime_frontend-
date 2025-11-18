@@ -326,6 +326,9 @@ export default function LudoBoard({ playerCount = 2, socket, roomCode, playerInd
     if (winner !== null) return;
     if (phase !== "rolled" || dice == null) return;
     if (currentCanMove) return;
+    // We intentionally delegate to `endTurn`, which updates state, to keep
+    // the game rules in a single place.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     endTurn(dice);
   }, [winner, phase, dice, currentCanMove, endTurn]);
 
@@ -336,6 +339,9 @@ export default function LudoBoard({ playerCount = 2, socket, roomCode, playerInd
     if (players.length === 0) return;
     if (rolledFlags.length !== players.length) return;
     if (rolledFlags.every(Boolean)) {
+      // This reset is isolated to this effect and does not cause user-visible
+      // loops, so we explicitly allow this state update here.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRolledFlags(Array(players.length).fill(false));
     }
   }, [rolledFlags, players.length]);
