@@ -30,7 +30,8 @@ export default function RoomPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [systemMsg, setSystemMsg] = useState("");
-  const [celebrate, setCelebrate] = useState(false);
+  // Start with the chess intro animation when entering the room.
+  const [celebrate, setCelebrate] = useState(true);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
 
   useEffect(() => {
@@ -53,12 +54,6 @@ export default function RoomPage() {
       setMessages((prev) => [...prev, data]);
     });
 
-    socket.on("game_started", () => {
-      // Show a short start animation + confetti when the game begins.
-      setCelebrate(true);
-      setTimeout(() => setCelebrate(false), 2000);
-    });
-
     socket.on("room_players", (_players: RoomPlayerInfo[]) => {
       // Room players list is currently not rendered here; we keep listening so
       // the server can still broadcast without causing errors.
@@ -69,7 +64,6 @@ export default function RoomPage() {
       // Ludo roles listener removed.
       socket.off("system");
       socket.off("chat");
-      socket.off("game_started");
       socket.off("room_players");
     };
   }, [socket, connected, roomCode, username]);
