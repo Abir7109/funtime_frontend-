@@ -87,13 +87,15 @@ body {
 }
 
 .ludo-root .ludo {
-  width: 750px;
-  height: 750px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  background-color: #ffffff;
+  width: 100%;
+  max-width: 450px;
+  aspect-ratio: 1 / 1;
   position: relative;
+  margin: 0 auto;
+  background-image: url('/ludo-bg.jpg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 .ludo-root .blue,
