@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Socket } from "socket.io-client";
 type PlayerId = number;
 
 const TOKENS_PER_PLAYER = 4;
@@ -98,8 +98,19 @@ interface TrackOccupant {
   tokenIndex: number;
 }
 
+interface LudoSnapshot {
+  players: PlayerState[];
+  currentPlayer: PlayerId;
+  dice: number | null;
+  phase: "idle" | "rolled";
+  winner: PlayerId | null;
+}
+
 interface LudoBoardProps {
   playerCount?: 2 | 4;
+  socket?: Socket | null;
+  roomCode?: string;
+  playerIndex?: PlayerId | null;
 }
 
 function createInitialPlayers(playerCount: 2 | 4): PlayerState[] {
@@ -145,7 +156,7 @@ function canMoveToken(player: PlayerState, token: Token, dice: number): boolean 
   return true;
 }
 
-export default function LudoBoard({ playerCount = 2 }: LudoBoardProps) {
+export default function LudoBoard({ playerCount = 2, socket, roomCode, playerIndex }: LudoBoardProps) {
   const [players, setPlayers] = useState<PlayerState[]>(() => createInitialPlayers(playerCount));
   const [currentPlayer, setCurrentPlayer] = useState<PlayerId>(0);
   const [dice, setDice] = useState<number | null>(null);
@@ -154,13 +165,19 @@ export default function LudoBoard({ playerCount = 2 }: LudoBoardProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [displayDice, setDisplayDice] = useState<number | null>(null);
 
+  const isNetworked = Boolean(socket && roomCode && playerIndex != null);
+  const applyingRemoteRef = useRef(false);
+
   const current = useMemo(
     () => players[currentPlayer]!,
     [players, currentPlayer],
   );
 
+  const isMyTurn = !isNetworked || playerIndex === currentPlayer;
+
   const handleRoll = () => {
     if (phase === "rolled" || winner !== null || isRolling) return;
+    if (isNetworked && !isMyTurn) return;
 
     const target = Math.floor(Math.random() * 6) + 1;
     setIsRolling(true);
@@ -199,6 +216,7 @@ export default function LudoBoard({ playerCount = 2 }: LudoBoardProps) {
 
   const handleTokenClick = (tokenIndex: number) => {
     if (phase !== "rolled" || dice == null || winner !== null) return;
+    if (isNetworked && !isMyTurn) return;
     const d = dice;
 
     setPlayers((prev) => {
@@ -284,6 +302,46 @@ export default function LudoBoard({ playerCount = 2 }: LudoBoardProps) {
     setWinner(null);
     setIsRolling(false);
   };
+
+  // Broadcast local Ludo state to the room when it changes. We treat the
+  // client as authoritative and the server as a relay. To avoid echo loops,
+  // we skip broadcasts when we're applying a remote snapshot.
+  useEffect(() => {
+    if (!isNetworked || !socket || !roomCode) return;
+    if (applyingRemoteRef.current) {
+      applyingRemoteRef.current = false;
+      return;
+    }
+    const snapshot: LudoSnapshot = {
+      players,
+      currentPlayer,
+      dice,
+      phase,
+      winner,
+    };
+    socket.emit("ludo_state", roomCode, snapshot);
+  }, [players, currentPlayer, dice, phase, winner, isNetworked, socket, roomCode]);
+
+  // Listen for remote Ludo state updates from other players in the room.
+  useEffect(() => {
+    if (!socket || !roomCode) return;
+
+    const handleState = (state: LudoSnapshot) => {
+      applyingRemoteRef.current = true;
+      setPlayers(state.players);
+      setCurrentPlayer(state.currentPlayer);
+      setDice(state.dice);
+      setDisplayDice(state.dice);
+      setPhase(state.phase);
+      setWinner(state.winner);
+      setIsRolling(false);
+    };
+
+    socket.on("ludo_state", handleState);
+    return () => {
+      socket.off("ludo_state", handleState);
+    };
+  }, [socket, roomCode]);
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between text-xs text-foreground/70">
@@ -307,7 +365,7 @@ export default function LudoBoard({ playerCount = 2 }: LudoBoardProps) {
           <button
             type="button"
             onClick={handleRoll}
-            disabled={phase === "rolled" || winner !== null || isRolling}
+            disabled={phase === "rolled" || winner !== null || isRolling || (isNetworked && !isMyTurn)}
             className="rounded-full bg-gradient-to-r from-orange to-yellow px-4 py-1.5 text-[11px] font-semibold text-navy shadow-md shadow-orange/40 disabled:opacity-60"
           >
             {isRolling ? "Rolling..." : phase === "idle" ? "Roll dice" : "Rolled"}
@@ -576,7 +634,7 @@ export default function LudoBoard({ playerCount = 2 }: LudoBoardProps) {
               key={idx}
               type="button"
               onClick={() => handleTokenClick(idx)}
-              disabled={phase !== "rolled" || dice == null || winner !== null}
+              disabled={phase !== "rolled" || dice == null || winner !== null || (isNetworked && !isMyTurn)}
               className="flex min-w-[70px] flex-col items-center rounded-2xl bg-black/40 px-3 py-2 text-[11px] shadow-inner disabled:opacity-60"
             >
               <span

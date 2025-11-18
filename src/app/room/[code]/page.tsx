@@ -6,7 +6,6 @@ import { useSocket } from "@/hooks/useSocket";
 import { GameKey } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
 import LudoBoard from "@/components/LudoBoard";
-import LudoJsBoard from "@/components/LudoJsBoard";
 
 interface ChatMessage {
   from: string;
@@ -31,6 +30,7 @@ export default function RoomPage() {
   const [systemMsg, setSystemMsg] = useState("");
   const [celebrate, setCelebrate] = useState(false);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+  const [ludoIndex, setLudoIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!socket || !connected || !roomCode) return;
@@ -39,6 +39,10 @@ export default function RoomPage() {
 
     socket.on("chess_role", ({ color }: { color: "w" | "b" | null }) => {
       setPlayerColor(color ?? null);
+    });
+
+    socket.on("ludo_role", ({ index }: { index: number | null }) => {
+      setLudoIndex(index ?? null);
     });
 
     socket.on("system", (msg: string) => {
@@ -57,6 +61,7 @@ export default function RoomPage() {
 
     return () => {
       socket.off("chess_role");
+      socket.off("ludo_role");
       socket.off("system");
       socket.off("chat");
       socket.off("game_started");
@@ -132,8 +137,12 @@ export default function RoomPage() {
             {gameKey === "chess" ? (
               <ChessBoard socket={socket} roomCode={roomCode} playerColor={playerColor} />
             ) : (
-              // Use the same designed Ludo board as the preview page.
-              <LudoJsBoard />
+              <LudoBoard
+                playerCount={playerCount}
+                socket={socket}
+                roomCode={roomCode}
+                playerIndex={ludoIndex ?? undefined}
+              />
             )}
           </div>
 
