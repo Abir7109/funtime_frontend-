@@ -143,7 +143,26 @@ export default function RoomPage() {
               </span>
             </div>
 
-            <ChessBoard socket={socket} roomCode={roomCode} playerColor={playerColor} />
+            {playerColor === null ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-orange/40 bg-orange/10 px-6 py-10 text-center">
+                <p className="text-sm font-semibold text-orange">
+                  This room is full (2 players max)
+                </p>
+                <p className="mt-2 text-xs text-foreground/70">
+                  Chess requires exactly two players. You joined as a spectator, but
+                  this game does not support spectators. Please create a new room or
+                  join a different one.
+                </p>
+                <a
+                  href="/games"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-foreground/30 bg-black/40 px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-black/60"
+                >
+                  ← Back to games
+                </a>
+              </div>
+            ) : (
+              <ChessBoard socket={socket} roomCode={roomCode} playerColor={playerColor} />
+            )}
           </div>
 
           {/* Chat panel */}
