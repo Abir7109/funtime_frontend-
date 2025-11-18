@@ -351,6 +351,17 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
     [isNetworked, playerColor],
   );
 
+  // Fallback: if, for some reason, the server never sends a FEN for this
+  // room (e.g. transient network hiccup), stop blocking the board after a
+  // short delay so the user still sees *something* instead of being stuck.
+  useEffect(() => {
+    if (!isNetworked || hasSyncedFromServer) return;
+    const timeoutId = window.setTimeout(() => {
+      setHasSyncedFromServer(true);
+    }, 2500);
+    return () => window.clearTimeout(timeoutId);
+  }, [isNetworked, hasSyncedFromServer]);
+
   return (
     <div className="flex flex-col gap-3 items-center">
       <div className="flex w-full max-w-[min(100vw-48px,480px)] items-center justify-between text-xs text-foreground/70">
@@ -365,7 +376,7 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
       >
         {isNetworked && !hasSyncedFromServer ? (
           <div className="flex h-[min(80vw,380px)] items-center justify-center text-xs text-foreground/60">
-            Syncing current game a0from server...
+            Syncing current game from server...
           </div>
         ) : (
           <>
