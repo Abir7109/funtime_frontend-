@@ -151,7 +151,7 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
 
     const currentTurn = game.turn() as TurnColor;
     // In a networked game, only the player whose color is to move may select.
-    if (socket && roomCode && playerColor && playerColor !== currentTurn) return;
+    if (socket && roomCode && playerColor !== currentTurn) return;
     const piece = game.get(square as any) as { color: TurnColor } | null;
     const pieceColor = piece?.color ?? null;
 
@@ -184,7 +184,8 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
     if (isGameOver) return;
 
     const currentTurn = game.turn() as TurnColor;
-    if (socket && roomCode && playerColor && playerColor !== currentTurn) {
+    // In a networked game, only the player whose color is to move may act.
+    if (socket && roomCode && playerColor !== currentTurn) {
       showInvalidMove();
       return;
     }
@@ -231,13 +232,17 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
     setSelectedSquare(null);
     setLegalTargets([]);
     updateHighlights(null, []);
+
+    if (socket && roomCode) {
+      socket.emit("chess_move", roomCode, { from: selectedSquare, to: square, promotion: "q" });
+    }
   };
 
   const handlePieceDrop = (source: string, target: string): boolean => {
     if (isGameOver) return false;
 
     const currentTurn = game.turn() as TurnColor;
-    if (socket && roomCode && playerColor && playerColor !== currentTurn) {
+    if (socket && roomCode && playerColor !== currentTurn) {
       showInvalidMove();
       return false;
     }
@@ -327,11 +332,11 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
             },
             squareStyles,
             animationDurationInMs: 200,
-            // Only allow dragging for the player whose turn it is in a
+            // Only allow dragging for the player whose color is to move in a
             // networked game. In preview mode (no socket/room), allow
             // dragging for both sides.
             allowDragging:
-              !isGameOver && (!socket || !roomCode || playerColor == null || playerColor === game.turn()),
+              !isGameOver && (!socket || !roomCode ? true : playerColor === game.turn()),
              onSquareClick: ({ square }: { square: string; piece: any | null }) => {
               if (!square) return;
               handleSquareClick(square);
