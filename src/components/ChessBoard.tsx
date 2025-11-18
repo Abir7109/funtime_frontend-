@@ -46,8 +46,10 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
   const [squareStyles, setSquareStyles] = useState<Record<string, CSSProperties>>({});
   const [invalidMoveMsg, setInvalidMoveMsg] = useState<string | null>(null);
   const invalidMoveTimeoutRef = useRef<number | null>(null);
-
   const isNetworked = Boolean(socket && roomCode);
+  // When in a networked room, wait for the server to send the current FEN
+  // before rendering the board so it doesn't briefly look "reset" on refresh.
+  const [hasSyncedFromServer, setHasSyncedFromServer] = useState<boolean>(() => !isNetworked);
 
   const showInvalidMove = (message = "Invalid move") => {
     setInvalidMoveMsg(message);
@@ -312,13 +314,17 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
       if (!fen) return;
       // If this update doesn't change the position we already have, skip
       // re-creating the Chess instance to avoid double renders.
-      if (fen === game.fen()) return;
+      if (fen === game.fen()) {
+        setHasSyncedFromServer(true);
+        return;
+      }
       const newGame = new Chess(fen);
       setGame(newGame);
       setTurn(newGame.turn() as TurnColor);
       setSelectedSquare(null);
       setLegalTargets([]);
       updateHighlights(null, []);
+      setHasSyncedFromServer(true);
     };
 
     const handleInvalid = () => {
@@ -357,6 +363,12 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
         className="relative overflow-hidden rounded-2xl border border-foreground/20 bg-black/60 shadow-inner mx-auto w-full max-w-[min(100vw-48px,480px)]"
         style={{ maxWidth: boardSize }}
       >
+        {isNetworked && !hasSyncedFromServer ? (
+          <div className="flex h-[min(80vw,380px)] items-center justify-center text-xs text-foreground/60">
+            Syncing current game a0from server...
+          </div>
+        ) : (
+          <>
         <ChessboardAny
             options={{
               id: "fun-together-chess-board",
@@ -403,6 +415,8 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
               </p>
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
       <div className="flex w-full max-w-[min(100vw-48px,480px)] items-center justify-between text-[11px] text-foreground/60">
