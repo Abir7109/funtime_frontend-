@@ -5,11 +5,18 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import { GameKey } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
-import LudoJsBoard from "@/components/LudoJsBoard";
+import LudoBoard from "@/components/LudoBoard";
 
 interface ChatMessage {
   from: string;
   msg: string;
+}
+
+interface RoomPlayerInfo {
+  id: string;
+  username: string;
+  color: "w" | "b" | null;
+  ludoIndex: number | null;
 }
 
 export default function RoomPage() {
@@ -31,6 +38,7 @@ export default function RoomPage() {
   const [celebrate, setCelebrate] = useState(false);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
   const [ludoIndex, setLudoIndex] = useState<number | null>(null);
+  const [roomPlayersState, setRoomPlayersState] = useState<RoomPlayerInfo[]>([]);
 
   useEffect(() => {
     if (!socket || !connected || !roomCode) return;
@@ -59,12 +67,17 @@ export default function RoomPage() {
       setTimeout(() => setCelebrate(false), 3000);
     });
 
+    socket.on("room_players", (players: RoomPlayerInfo[]) => {
+      setRoomPlayersState(players || []);
+    });
+
     return () => {
       socket.off("chess_role");
       socket.off("ludo_role");
       socket.off("system");
       socket.off("chat");
       socket.off("game_started");
+      socket.off("room_players");
     };
   }, [socket, connected, roomCode, username]);
 
@@ -72,6 +85,11 @@ export default function RoomPage() {
     if (!socket || !chatInput.trim()) return;
     socket.emit("chat", roomCode, chatInput);
     setChatInput("");
+  };
+
+  const chooseLudoRole = (index: 0 | 1) => {
+    if (!socket || !roomCode) return;
+    socket.emit("ludo_choose_role", roomCode, index);
   };
 
   return (
@@ -134,10 +152,52 @@ export default function RoomPage() {
                 {username}
               </span>
             </div>
+
+            {gameKey === "ludo" && (
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/70">
+                <span className="mr-1 font-semibold uppercase tracking-[0.25em] text-foreground/60">
+                  Ludo color
+                </span>
+                {[0, 1].map((idx) => {
+                  const holder = roomPlayersState.find((p) => p.ludoIndex === idx) || null;
+                  const isMe = ludoIndex === idx;
+                  const takenByOther = !!holder && !isMe;
+                  const disabled = !socket || !connected || takenByOther;
+                  const label = idx === 0 ? "Player 1" : "Player 2";
+                  const colorSwatch = idx === 0 ? "bg-sky" : "bg-teal";
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => chooseLudoRole(idx as 0 | 1)}
+                      className={`inline-flex items-center gap-1 rounded-full border border-foreground/25 px-2.5 py-1 text-[11px] font-semibold transition ${
+                        isMe ? "bg-cyan/20 text-cyan" : "bg-black/40 text-foreground/80"
+                      } disabled:opacity-60`}
+                    >
+                      <span className={`h-3 w-3 rounded-full ${colorSwatch}`} />
+                      <span>{label}</span>
+                      {holder && (
+                        <span className="ml-1 text-[10px] text-foreground/60">
+                          {isMe ? "(You)" : `(${holder.username})`}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {gameKey === "chess" ? (
               <ChessBoard socket={socket} roomCode={roomCode} playerColor={playerColor} />
             ) : (
-              <LudoJsBoard />
+              <LudoBoard
+                playerCount={playerCount}
+                socket={socket}
+                roomCode={roomCode}
+                playerIndex={ludoIndex ?? null}
+              />
             )}
           </div>
 
