@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Socket } from "socket.io-client";
 type PlayerId = number;
 
@@ -200,19 +200,21 @@ export default function LudoBoard({ playerCount = 2, socket, roomCode, playerInd
       }
     }, intervalMs);
   };
-  const endTurn = (lastRoll: number) => {
-    if (winner !== null) return;
-    // Extra turn on 6
-    if (lastRoll === 6) {
+  const endTurn = useCallback(
+    (lastRoll: number) => {
+      if (winner !== null) return;
+      // Extra turn on 6
+      if (lastRoll === 6) {
+        setPhase("idle");
+        setDice(null);
+        return;
+      }
+      setCurrentPlayer((prev) => (prev + 1) % players.length);
       setPhase("idle");
       setDice(null);
-      return;
-    }
-    const nextPlayer: PlayerId = (currentPlayer + 1) % players.length;
-    setCurrentPlayer(nextPlayer);
-    setPhase("idle");
-    setDice(null);
-  };
+    },
+    [winner, players.length],
+  );
 
   const handleTokenClick = (tokenIndex: number) => {
     if (phase !== "rolled" || dice == null || winner !== null) return;
@@ -302,6 +304,15 @@ export default function LudoBoard({ playerCount = 2, socket, roomCode, playerInd
     setWinner(null);
     setIsRolling(false);
   };
+
+  // If you roll the dice but have no valid move, automatically pass the turn
+  // so the game never gets stuck waiting for a manual refresh.
+  useEffect(() => {
+    if (winner !== null) return;
+    if (phase !== "rolled" || dice == null) return;
+    if (currentCanMove) return;
+    endTurn(dice);
+  }, [winner, phase, dice, currentCanMove, endTurn]);
 
   // Broadcast local Ludo state to the room when it changes. We treat the
   // client as authoritative and the server as a relay. To avoid echo loops,
