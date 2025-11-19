@@ -384,7 +384,7 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
             options={{
               id: "fun-together-chess-board",
               position: game.fen(),
-              orientation: boardOrientation,
+              boardOrientation,
               boardStyle: {
               borderRadius: "12px",
               boxShadow: "0 2px 10px rgba(0,0,0,0.6)",
