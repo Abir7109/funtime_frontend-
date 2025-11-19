@@ -33,9 +33,10 @@ interface ChessBoardProps {
   socket?: Socket | null;
   roomCode?: string;
   playerColor?: PlayerColor;
+  opponentLeft?: boolean;
 }
 
-export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoardProps) {
+export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft }: ChessBoardProps) {
   const [game, setGame] = useState<Chess>(() => createInitialGame());
   // Start with a fixed value so SSR and initial client render match; adjust in
   // an effect once the window size is known.
@@ -432,10 +433,20 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
           }}
         />
         {isPlayersKingInCheck && (
-          <div className="pointer-events-none absolute inset-x-0 top-2 z-10 flex justify-center">
+          <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center">
             <div className="check-warning-pop pointer-events-auto inline-flex items-center gap-2 rounded-full bg-red-600/90 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-background shadow-lg shadow-red-500/60">
               <span className="check-warning-icon text-sm">⚠</span>
               <span>Check! Protect your king</span>
+            </div>
+          </div>
+        )}
+        {opponentLeft && !isGameOver && (
+          <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+            <div className="game-over-pop pointer-events-auto mx-4 max-w-xs rounded-3xl bg-black/85 px-5 py-4 text-center shadow-2xl ring-1 ring-cyan/40">
+              <p className="text-sm font-semibold text-sand">Opponent left the room</p>
+              <p className="mt-1 text-xs text-foreground/75">
+                You can keep exploring the board, or head back to choose a new game.
+              </p>
             </div>
           </div>
         )}

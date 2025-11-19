@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import ChessBoard from "@/components/ChessBoard";
@@ -33,6 +33,9 @@ export default function RoomPage() {
   // Start with the chess intro animation when entering the room.
   const [celebrate, setCelebrate] = useState(true);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+  const [roomPlayers, setRoomPlayers] = useState<RoomPlayerInfo[]>([]);
+  const [opponentLeft, setOpponentLeft] = useState(false);
+  const prevActivePlayersRef = useRef(0);
 
   useEffect(() => {
     if (!socket || !connected || !roomCode) return;
@@ -54,9 +57,8 @@ export default function RoomPage() {
       setMessages((prev) => [...prev, data]);
     });
 
-    socket.on("room_players", (_players: RoomPlayerInfo[]) => {
-      // Room players list is currently not rendered here; we keep listening so
-      // the server can still broadcast without causing errors.
+    socket.on("room_players", (players: RoomPlayerInfo[]) => {
+      setRoomPlayers(players || []);
     });
 
     return () => {
@@ -67,6 +69,23 @@ export default function RoomPage() {
       socket.off("room_players");
     };
   }, [socket, connected, roomCode, username]);
+
+  // Detect when the other player leaves during a game.
+  useEffect(() => {
+    const activeWithColor = roomPlayers.filter((p) => p.color !== null).length;
+    const prev = prevActivePlayersRef.current;
+
+    if (activeWithColor < 2 && prev >= 2 && playerColor !== null) {
+      // This is a rare UI-only state flag and safe to update here.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOpponentLeft(true);
+    }
+    if (activeWithColor >= 2) {
+      setOpponentLeft(false);
+    }
+
+    prevActivePlayersRef.current = activeWithColor;
+  }, [roomPlayers, playerColor]);
 
   const sendChat = () => {
     if (!socket || !chatInput.trim()) return;
@@ -148,7 +167,12 @@ export default function RoomPage() {
                 </a>
               </div>
             ) : (
-              <ChessBoard socket={socket} roomCode={roomCode} playerColor={playerColor} />
+              <ChessBoard
+                socket={socket}
+                roomCode={roomCode}
+                playerColor={playerColor}
+                opponentLeft={opponentLeft}
+              />
             )}
           </div>
 
