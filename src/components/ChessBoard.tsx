@@ -96,6 +96,15 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
     [chessAny],
   );
 
+  const isInCheck = useMemo(() => {
+    if (isGameOver) return false;
+    return (
+      chessAny.in_check?.() ??
+      chessAny.isCheck?.() ??
+      chessAny.isCheck?.call?.(chessAny)
+    );
+  }, [chessAny, isGameOver]);
+
   const statusText = useMemo(() => {
     if (isGameOver) {
       const inCheckmate =
@@ -128,15 +137,13 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
       return "Game over";
     }
 
-    const inCheck =
-      chessAny.in_check?.() ?? chessAny.isCheck?.() ?? chessAny.isCheck?.call?.(chessAny);
-    if (inCheck) {
+    if (isInCheck) {
       const inCheckColor = (chessAny.turn?.() as TurnColor) === "w" ? "White" : "Black";
-      return `Check 9 ${inCheckColor} is in check`;
+      return `Check \u00019 ${inCheckColor} is in check`;
     }
 
     return "Drag and drop pieces. Chess rules are enforced by chess.js.";
-  }, [chessAny, isGameOver]);
+  }, [chessAny, isGameOver, isInCheck]);
 
   const updateHighlights = (selected: string | null, targets: string[]) => {
     const styles: Record<string, CSSProperties> = {};
@@ -351,6 +358,15 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
     [isNetworked, playerColor],
   );
 
+  const isPlayersKingInCheck = useMemo(() => {
+    if (!isInCheck || isGameOver) return false;
+    const sideToMove = chessAny.turn?.() as TurnColor;
+    if (!sideToMove) return false;
+    if (!isNetworked) return true;
+    if (!playerColor) return false;
+    return playerColor === sideToMove;
+  }, [isInCheck, isGameOver, chessAny, isNetworked, playerColor]);
+
   // Fallback: if, for some reason, the server never sends a FEN for this
   // room (e.g. transient network hiccup), stop blocking the board after a
   // short delay so the user still sees *something* instead of being stuck.
@@ -415,6 +431,14 @@ export default function ChessBoard({ socket, roomCode, playerColor }: ChessBoard
             }) => handlePieceDrop(sourceSquare, targetSquare ?? sourceSquare),
           }}
         />
+        {isPlayersKingInCheck && (
+          <div className="pointer-events-none absolute inset-x-0 top-2 z-10 flex justify-center">
+            <div className="check-warning-pop pointer-events-auto inline-flex items-center gap-2 rounded-full bg-red-600/90 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-background shadow-lg shadow-red-500/60">
+              <span className="check-warning-icon text-sm">⚠</span>
+              <span>Check! Protect your king</span>
+            </div>
+          </div>
+        )}
         {isGameOver && (
           <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
             <div className="game-over-pop pointer-events-auto relative mx-4 max-w-xs rounded-3xl bg-black/85 px-5 py-4 text-center shadow-2xl ring-1 ring-white/10">
