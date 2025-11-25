@@ -349,6 +349,11 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
     };
   }, [socket, roomCode, game]);
 
+  useEffect(() => {
+    if (!socket || !roomCode || !isNetworked || hasSyncedFromServer) return;
+    socket.emit("chess_request_state", roomCode);
+  }, [socket, roomCode, isNetworked, hasSyncedFromServer]);
+
   const boardOrientation = useMemo<"white" | "black">(
     () => {
       // In a networked game, orient the board so each player sees their own
