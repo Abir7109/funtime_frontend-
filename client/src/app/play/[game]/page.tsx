@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { games } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
 import TicTacToeBoard from "@/components/TicTacToeBoard";
+import ConnectFourBoard from "@/components/ConnectFourBoard";
 import { ChessStartAnimation } from "@/components/ChessStartAnimation";
 
 export default function PlayGamePreviewPage() {
@@ -85,6 +86,8 @@ export default function PlayGamePreviewPage() {
           </div>
           {gameKey === "tictactoe" ? (
             <TicTacToeBoard />
+          ) : gameKey === "connect4" ? (
+            <ConnectFourBoard />
           ) : (
             <ChessBoard />
           )}

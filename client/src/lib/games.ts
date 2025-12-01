@@ -1,4 +1,4 @@
-export type GameKey = "chess" | "tictactoe";
+export type GameKey = "chess" | "tictactoe" | "connect4";
 
 export interface GameConfig {
   key: GameKey;
@@ -34,5 +34,16 @@ export const games: GameConfig[] = [
     time: "2–5 min",
     accent: "from-fuchsia to-purple",
     thumbnailLine: "Neon 3×3 grid with glowing X and O highlights.",
+  },
+  {
+    key: "connect4",
+    title: "Connect Four",
+    icon: "🟡",
+    badge: "Drop & connect",
+    desc: "Drop discs into a seven-column grid and be the first to connect four in any direction.",
+    players: "2 players",
+    time: "5–15 min",
+    accent: "from-indigo-500 to-sky-500",
+    thumbnailLine: "Bright vertical board where chips fall and four-in-a-row wins.",
   },
 ];

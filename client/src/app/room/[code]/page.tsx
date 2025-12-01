@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import ChessBoard from "@/components/ChessBoard";
 import TicTacToeBoard from "@/components/TicTacToeBoard";
+import ConnectFourBoard from "@/components/ConnectFourBoard";
 import { ChessStartAnimation } from "@/components/ChessStartAnimation";
 
 interface ChatMessage {
@@ -36,6 +37,7 @@ export default function RoomPage() {
   const [celebrate, setCelebrate] = useState(true);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
   const [tttSymbol, setTttSymbol] = useState<"X" | "O" | null>(null);
+  const [c4Symbol, setC4Symbol] = useState<"R" | "Y" | null>(null);
   const [roomPlayers, setRoomPlayers] = useState<RoomPlayerInfo[]>([]);
   const [opponentLeft, setOpponentLeft] = useState(false);
   const prevActivePlayersRef = useRef(0);
@@ -51,6 +53,10 @@ export default function RoomPage() {
 
     socket.on("tictactoe_role", ({ symbol }: { symbol: "X" | "O" | null }) => {
       setTttSymbol(symbol ?? null);
+    });
+
+    socket.on("connect4_role", ({ symbol }: { symbol: "R" | "Y" | null }) => {
+      setC4Symbol(symbol ?? null);
     });
 
     // Ludo roles are no longer used since Ludo game was removed.
@@ -71,6 +77,7 @@ export default function RoomPage() {
     return () => {
       socket.off("chess_role");
       socket.off("tictactoe_role");
+      socket.off("connect4_role");
       // Ludo roles listener removed.
       socket.off("system");
       socket.off("chat");
@@ -149,7 +156,11 @@ export default function RoomPage() {
               <span>
                 Shared game board
                 <span className="ml-2 rounded-full bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-foreground/60">
-                  {gameKey === "tictactoe" ? "Tic Tac Toe" : "Chess"}
+                  {gameKey === "tictactoe"
+                    ? "Tic Tac Toe"
+                    : gameKey === "connect4"
+                    ? "Connect Four"
+                    : "Chess"}
                 </span>
               </span>
               <span className="inline-flex items-center rounded-full bg-black/40 px-2.5 py-1 font-mono text-[11px]">
@@ -162,6 +173,13 @@ export default function RoomPage() {
                 socket={socket}
                 roomCode={roomCode}
                 playerSymbol={tttSymbol}
+                playerName={username}
+              />
+            ) : gameKey === "connect4" ? (
+              <ConnectFourBoard
+                socket={socket}
+                roomCode={roomCode}
+                playerSymbol={c4Symbol}
                 playerName={username}
               />
             ) : playerColor === null ? (
