@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Socket } from "socket.io-client";
 import type { CarromBoardState, CarromShotPayload } from "@/lib/carrom/types";
 
@@ -12,10 +12,11 @@ interface CarromBoardProps {
 export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
   const [state, setState] = useState<CarromBoardState | null>(null);
   const [baselineX, setBaselineX] = useState(0.5);
-  const [angleDeg, setAngleDeg] = useState(-90); // up by default
-  const [power, setPower] = useState(0.6);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragCurrent, setDragCurrent] = useState<{ x: number; y: number } | null>(null);
 
   const isNetworked = Boolean(socket && roomCode);
+  const boardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!socket || !roomCode || !isNetworked) return;
@@ -41,18 +42,8 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
     return state.turnPhase === "aiming";
   }, [state]);
 
-  const shoot = () => {
-    if (!socket || !roomCode || !canShoot) return;
-    const payload: CarromShotPayload = {
-      angle: (angleDeg * Math.PI) / 180,
-      power,
-      baselineX,
-    };
-    socket.emit("carrom_shot", roomCode, payload);
-  };
-
   const boardCoins = state?.coins ?? [];
-  const striker = state?.striker ?? { position: { x: 0.5, y: 0.1 }, radius: 0 };
+  const striker = state?.striker ?? { position: { x: baselineX, y: 0.9 }, radius: 0 };
 
   const scoresLabel = useMemo(() => {
     if (!state) return "";
@@ -66,6 +57,68 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
     const p = state.players[state.winnerPlayer];
     return `${p.username || state.winnerPlayer} wins the board!`;
   }, [state]);
+
+  const handlePointerDown: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    if (!canShoot || !boardRef.current) return;
+    const rect = boardRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    // Only start drag near bottom baseline.
+    if (y < 0.75) return;
+    setBaselineX(Math.min(0.85, Math.max(0.15, x)));
+    setDragStart({ x, y });
+    setDragCurrent({ x, y });
+  };
+
+  const handlePointerMove: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    if (!dragStart || !boardRef.current) return;
+    const rect = boardRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    setDragCurrent({ x, y });
+  };
+
+  const handlePointerUp: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    if (!dragStart || !dragCurrent || !socket || !roomCode || !canShoot || !boardRef.current) {
+      setDragStart(null);
+      setDragCurrent(null);
+      return;
+    }
+    const baseX = baselineX;
+    const baseY = 0.9;
+    const dx = dragCurrent.x - baseX;
+    const dy = dragCurrent.y - baseY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 0.03) {
+      setDragStart(null);
+      setDragCurrent(null);
+      return;
+    }
+    // Direction is from baseline into the board (opposite of drag).
+    const dirX = -dx;
+    const dirY = -dy;
+    const angle = Math.atan2(dirY, dirX);
+    const power = Math.min(1, Math.max(0.2, dist * 3));
+    const payload: CarromShotPayload = {
+      angle,
+      power,
+      baselineX: baseX,
+    };
+    socket.emit("carrom_shot", roomCode, payload);
+    setDragStart(null);
+    setDragCurrent(null);
+  };
+
+  const aimingLine = useMemo(() => {
+    if (!dragStart || !dragCurrent) return null;
+    const baseY = 0.9;
+    const dx = dragCurrent.x - baselineX;
+    const dy = dragCurrent.y - baseY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const angle = (Math.atan2(-dy, -dx) * 180) / Math.PI;
+    const length = Math.min(0.4, dist * 1.2);
+    return { angle, length };
+  }, [dragStart, dragCurrent, baselineX]);
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -84,7 +137,14 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
             </span>
           </div>
         )}
-        <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-2xl bg-black/80">
+        <div
+          ref={boardRef}
+          className="relative mx-auto aspect-square w-full overflow-hidden rounded-2xl bg-black/80"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+        >
           {winnerLabel && (
             <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center">
               <div className="pointer-events-auto rounded-full bg-emerald-500/90 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-900 shadow-lg shadow-emerald-500/60">
@@ -129,59 +189,18 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
           </div>
           {/* Aiming overlay */}
           <div className="pointer-events-none absolute inset-0">
-            <div
-              className="pointer-events-none absolute h-32 w-px origin-bottom bg-gradient-to-t from-cyan-300/90 to-transparent"
-              style={{
-                left: `${baselineX * 100}%`,
-                bottom: "8%",
-                transform: `translateX(-50%) rotate(${angleDeg}deg)`,
-              }}
-            />
+            {aimingLine && (
+              <div
+                className="pointer-events-none absolute w-px origin-bottom bg-gradient-to-t from-cyan-300/90 to-transparent"
+                style={{
+                  left: `${baselineX * 100}%`,
+                  bottom: "8%",
+                  height: `${aimingLine.length * 100}%`,
+                  transform: `translateX(-50%) rotate(${aimingLine.angle}deg)`,
+                }}
+              />
+            )}
           </div>
-        </div>
-        {/* Controls */}
-        <div className="mt-3 flex flex-col gap-2 text-[11px] text-foreground/70">
-          <label className="flex flex-col gap-1">
-            <span>Striker position</span>
-            <input
-              type="range"
-              min={0.15}
-              max={0.85}
-              step={0.01}
-              value={baselineX}
-              onChange={(e) => setBaselineX(parseFloat(e.target.value))}
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span>Aim angle</span>
-            <input
-              type="range"
-              min={-150}
-              max={-30}
-              step={1}
-              value={angleDeg}
-              onChange={(e) => setAngleDeg(parseFloat(e.target.value))}
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span>Power</span>
-            <input
-              type="range"
-              min={0.2}
-              max={1}
-              step={0.01}
-              value={power}
-              onChange={(e) => setPower(parseFloat(e.target.value))}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={shoot}
-            disabled={!canShoot}
-            className="mt-1 inline-flex w-full items-center justify-center rounded-full bg-cyan px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-900 shadow-md disabled:opacity-50"
-          >
-            Shoot
-          </button>
         </div>
       </div>
     </div>
