@@ -1,4 +1,4 @@
-export type GameKey = "chess";
+export type GameKey = "chess" | "tictactoe";
 
 export interface GameConfig {
   key: GameKey;
@@ -21,5 +21,15 @@ export const games: GameConfig[] = [
     players: "2 players",
     time: "30–60 min",
     accent: "from-sky to-cyan",
+  },
+  {
+    key: "tictactoe",
+    title: "Tic Tac Toe",
+    icon: "⭕",
+    badge: "Quick duel",
+    desc: "Fast-paced 3×3 battle. Read your opponent and line up three in a row.",
+    players: "2 players",
+    time: "2–5 min",
+    accent: "from-fuchsia to-purple",
   },
 ];

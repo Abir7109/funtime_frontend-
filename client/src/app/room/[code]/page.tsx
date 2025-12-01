@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import ChessBoard from "@/components/ChessBoard";
+import TicTacToeBoard from "@/components/TicTacToeBoard";
 import { ChessStartAnimation } from "@/components/ChessStartAnimation";
 
 interface ChatMessage {
@@ -22,6 +23,7 @@ export default function RoomPage() {
   const searchParams = useSearchParams();
   const roomCode = (params.code as string)?.toUpperCase() || "";
   const fromQuery = (searchParams.get("username") || "").trim();
+  const gameKey = (searchParams.get("game") || "chess").trim();
   const { socket, connected } = useSocket();
 
   const [username] = useState(
@@ -33,6 +35,7 @@ export default function RoomPage() {
   // Start with the chess intro animation when entering the room.
   const [celebrate, setCelebrate] = useState(true);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+  const [tttSymbol, setTttSymbol] = useState<"X" | "O" | null>(null);
   const [roomPlayers, setRoomPlayers] = useState<RoomPlayerInfo[]>([]);
   const [opponentLeft, setOpponentLeft] = useState(false);
   const prevActivePlayersRef = useRef(0);
@@ -44,6 +47,10 @@ export default function RoomPage() {
 
     socket.on("chess_role", ({ color }: { color: "w" | "b" | null }) => {
       setPlayerColor(color ?? null);
+    });
+
+    socket.on("tictactoe_role", ({ symbol }: { symbol: "X" | "O" | null }) => {
+      setTttSymbol(symbol ?? null);
     });
 
     // Ludo roles are no longer used since Ludo game was removed.
@@ -63,6 +70,7 @@ export default function RoomPage() {
 
     return () => {
       socket.off("chess_role");
+      socket.off("tictactoe_role");
       // Ludo roles listener removed.
       socket.off("system");
       socket.off("chat");
@@ -141,7 +149,7 @@ export default function RoomPage() {
               <span>
                 Shared game board
                 <span className="ml-2 rounded-full bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-foreground/60">
-                  Chess
+                  {gameKey === "tictactoe" ? "Tic Tac Toe" : "Chess"}
                 </span>
               </span>
               <span className="inline-flex items-center rounded-full bg-black/40 px-2.5 py-1 font-mono text-[11px]">
@@ -149,7 +157,9 @@ export default function RoomPage() {
               </span>
             </div>
 
-            {playerColor === null ? (
+            {gameKey === "tictactoe" ? (
+              <TicTacToeBoard socket={socket} roomCode={roomCode} playerSymbol={tttSymbol} />
+            ) : playerColor === null ? (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-orange/40 bg-orange/10 px-6 py-10 text-center">
                 <p className="text-sm font-semibold text-orange">
                   This room is full (2 players max)

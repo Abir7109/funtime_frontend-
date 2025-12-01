@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { games } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
+import TicTacToeBoard from "@/components/TicTacToeBoard";
 import { ChessStartAnimation } from "@/components/ChessStartAnimation";
 
 export default function PlayGamePreviewPage() {
@@ -82,7 +83,7 @@ export default function PlayGamePreviewPage() {
               Playable demo (local)
             </span>
           </div>
-          <ChessBoard />
+          {gameKey === "tictactoe" ? <TicTacToeBoard /> : <ChessBoard />}
         </div>
       </div>
     </div>

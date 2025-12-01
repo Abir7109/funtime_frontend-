@@ -13,7 +13,7 @@ function generateCode() {
 function RoomsContent() {
   const sp = useSearchParams();
   const router = useRouter();
-  const presetGame = sp.get("game") || "";
+  const presetGame = (sp.get("game") || "chess").trim();
   const presetMode = sp.get("mode") || "";
 
   const [username, setUsername] = useState("");
@@ -30,7 +30,7 @@ function RoomsContent() {
     const code = generateCode();
     setCreatedCode(code);
     const usernameParam = encodeURIComponent(username.trim());
-    const gameParam = encodeURIComponent("chess");
+    const gameParam = encodeURIComponent(presetGame || "chess");
     setTimeout(
       () =>
         router.push(
@@ -42,7 +42,7 @@ function RoomsContent() {
 
   const handleJoin = () => {
     const usernameParam = encodeURIComponent(username.trim());
-    const gameParam = encodeURIComponent("chess");
+    const gameParam = encodeURIComponent(presetGame || "chess");
     router.push(`/lobby/${joinCode}?username=${usernameParam}&game=${gameParam}`);
   };
 
@@ -118,7 +118,7 @@ function RoomsContent() {
                 </label>
                 <input
                   className="w-full rounded-lg border border-foreground/20 bg-black/30 px-3 py-2 text-sm text-foreground outline-none focus:border-cyan"
-                  value="Chess"
+                  value={presetGame === "tictactoe" ? "Tic Tac Toe" : "Chess"}
                   disabled
                 />
               </div>
