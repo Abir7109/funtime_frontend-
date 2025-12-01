@@ -247,25 +247,21 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
       return;
     }
 
-    // Attempt the move (client-side legality check only).
+    // Attempt the move
     const move = tryMove(gameCopy, selectedSquare, square);
     if (!move) {
       showInvalidMove();
       return;
     }
 
-    // In a networked game, let the server be authoritative for state.
-    // We just emit the move and wait for a chess_position update to adjust
-    // our local board. In local/preview mode, we can update immediately.
+    setGame(gameCopy);
+    setTurn(gameCopy.turn() as TurnColor);
     setSelectedSquare(null);
     setLegalTargets([]);
     updateHighlights(null, []);
 
     if (socket && roomCode) {
       socket.emit("chess_move", roomCode, { from: selectedSquare, to: square, promotion: "q" });
-    } else {
-      setGame(gameCopy);
-      setTurn(gameCopy.turn() as TurnColor);
     }
   };
 
@@ -292,31 +288,29 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
       return false; // illegal move
     }
 
+    setGame(gameCopy);
+    setTurn(gameCopy.turn() as TurnColor);
     setSelectedSquare(null);
     setLegalTargets([]);
     updateHighlights(null, []);
 
     if (socket && roomCode) {
       socket.emit("chess_move", roomCode, { from: source, to: target, promotion: "q" });
-    } else {
-      setGame(gameCopy);
-      setTurn(gameCopy.turn() as TurnColor);
     }
 
     return true;
   };
 
   const resetGame = () => {
+    const fresh = createInitialGame();
+    setGame(fresh);
+    setTurn("w");
     setSelectedSquare(null);
     setLegalTargets([]);
     updateHighlights(null, []);
 
     if (socket && roomCode) {
       socket.emit("chess_reset", roomCode);
-    } else {
-      const fresh = createInitialGame();
-      setGame(fresh);
-      setTurn("w");
     }
   };
 
