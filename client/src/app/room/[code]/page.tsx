@@ -5,7 +5,6 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import ChessBoard from "@/components/ChessBoard";
 import TicTacToeBoard from "@/components/TicTacToeBoard";
-import CarromBoard from "@/components/CarromBoard";
 import { ChessStartAnimation } from "@/components/ChessStartAnimation";
 
 interface ChatMessage {
@@ -150,7 +149,7 @@ export default function RoomPage() {
               <span>
                 Shared game board
                 <span className="ml-2 rounded-full bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-foreground/60">
-                  {gameKey === "tictactoe" ? "Tic Tac Toe" : gameKey === "carrom" ? "Carrom" : "Chess"}
+                  {gameKey === "tictactoe" ? "Tic Tac Toe" : "Chess"}
                 </span>
               </span>
               <span className="inline-flex items-center rounded-full bg-black/40 px-2.5 py-1 font-mono text-[11px]">
@@ -165,8 +164,6 @@ export default function RoomPage() {
                 playerSymbol={tttSymbol}
                 playerName={username}
               />
-            ) : gameKey === "carrom" ? (
-              <CarromBoard socket={socket} roomCode={roomCode} />
             ) : playerColor === null ? (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-orange/40 bg-orange/10 px-6 py-10 text-center">
                 <p className="text-sm font-semibold text-orange">

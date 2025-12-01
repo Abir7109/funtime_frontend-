@@ -1,4 +1,4 @@
-export type GameKey = "chess" | "tictactoe" | "carrom";
+export type GameKey = "chess" | "tictactoe";
 
 export interface GameConfig {
   key: GameKey;
@@ -34,16 +34,5 @@ export const games: GameConfig[] = [
     time: "2–5 min",
     accent: "from-fuchsia to-purple",
     thumbnailLine: "Neon 3×3 grid with glowing X and O highlights.",
-  },
-  {
-    key: "carrom",
-    title: "Carrom",
-    icon: "🎯",
-    badge: "Board classic",
-    desc: "Strike the queen, pocket your coins, and outplay your friends on a shared carrom board.",
-    players: "2 players",
-    time: "10–20 min",
-    accent: "from-amber-500 to-rose-500",
-    thumbnailLine: "Polished wooden board for smooth, shareable carrom matches.",
   },
 ];
