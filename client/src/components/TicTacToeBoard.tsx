@@ -51,7 +51,7 @@ export default function TicTacToeBoard({ socket, roomCode, playerSymbol }: TicTa
 
     if (isNetworked) {
       if (!socket || !roomCode) return;
-      if (!playerSymbol || playerSymbol !== state.next) return;
+      // Let the server decide if this socket is allowed to move (X/O + turn).
       socket.emit("tictactoe_move", roomCode, index);
       return;
     }
@@ -100,7 +100,7 @@ export default function TicTacToeBoard({ socket, roomCode, playerSymbol }: TicTa
                 type="button"
                 onClick={() => makeMove(idx)}
                 className="flex items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 text-3xl font-black text-sand shadow-md transition hover:from-slate-700 hover:to-slate-800 disabled:opacity-40"
-                disabled={Boolean(state.winner || cell || (isNetworked && (!playerSymbol || playerSymbol !== state.next)))}
+                disabled={Boolean(state.winner || cell)}
               >
                 {cell && (
                   <span
