@@ -156,7 +156,7 @@ export default function TicTacToeBoard({ socket, roomCode, playerSymbol, playerN
         </div>
         {state.winner && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="pointer-events-auto mx-4 max-w-xs animate-[bounce_1.1s_ease-out_1] rounded-3xl bg-gradient-to-r from-yellow-400/90 via-amber-300/95 to-pink-400/90 px-5 py-4 text-center text-xs font-semibold text-slate-900 shadow-[0_0_40px_rgba(250,204,21,0.8)] ring-1 ring-yellow-200/80">
+            <div className="pointer-events-auto mx-4 max-w-xs animate-bounce rounded-3xl bg-gradient-to-r from-yellow-400/90 via-amber-300/95 to-pink-400/90 px-5 py-4 text-center text-xs font-semibold text-slate-900 shadow-[0_0_40px_rgba(250,204,21,0.8)] ring-1 ring-yellow-200/80">
               <div className="mb-1 text-lg">✨ {statusText} ✨</div>
               <div className="text-[11px] font-medium">{winnerMessage}</div>
             </div>
