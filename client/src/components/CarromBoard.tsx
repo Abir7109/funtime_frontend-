@@ -1,12 +1,61 @@
 "use client";
 
-export default function CarromBoard() {
+import { useEffect, useMemo, useState } from "react";
+import type { Socket } from "socket.io-client";
+import type { CarromBoardState, CarromShotPayload } from "@/lib/carrom/types";
+
+interface CarromBoardProps {
+  socket?: Socket | null;
+  roomCode?: string;
+}
+
+export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
+  const [state, setState] = useState<CarromBoardState | null>(null);
+  const [baselineX, setBaselineX] = useState(0.5);
+  const [angleDeg, setAngleDeg] = useState(-90); // up by default
+  const [power, setPower] = useState(0.6);
+
+  const isNetworked = Boolean(socket && roomCode);
+
+  useEffect(() => {
+    if (!socket || !roomCode || !isNetworked) return;
+
+    const handleState = (s: CarromBoardState) => {
+      setState(s);
+    };
+
+    socket.emit("carrom_request_state", roomCode);
+    socket.on("carrom_state", handleState);
+
+    return () => {
+      socket.off("carrom_state", handleState);
+    };
+  }, [socket, roomCode, isNetworked]);
+
+  const canShoot = useMemo(() => {
+    if (!state) return false;
+    return state.turnPhase === "aiming";
+  }, [state]);
+
+  const shoot = () => {
+    if (!socket || !roomCode || !canShoot) return;
+    const payload: CarromShotPayload = {
+      angle: (angleDeg * Math.PI) / 180,
+      power,
+      baselineX,
+    };
+    socket.emit("carrom_shot", roomCode, payload);
+  };
+
+  const boardCoins = state?.coins ?? [];
+  const striker = state?.striker ?? { position: { x: 0.5, y: 0.1 }, radius: 0 };
+
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex w-full max-w-md items-center justify-between text-xs text-foreground/70">
         <span>Carrom board</span>
         <span className="inline-flex items-center rounded-full bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">
-          Visual preview
+          {state ? `Turn: ${state.currentPlayer}` : "Syncing"}
         </span>
       </div>
       <div className="relative mx-auto w-full max-w-md rounded-3xl border border-foreground/20 bg-black/60 p-3 shadow-inner">
@@ -16,36 +65,91 @@ export default function CarromBoard() {
             alt="Carrom board"
             className="h-full w-full object-cover"
           />
-          {/* Coins overlay (static preview for now) */}
+          {/* Coins */}
           <div className="pointer-events-none absolute inset-0">
-            {/* Main coin in the center */}
-            <img
-              src="/carrom-coin-main.png"
-              alt="Main coin"
-              className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_12px_rgba(248,250,252,0.9)]"
-            />
-            {/* A few black and white coins near center to suggest layout */}
-            <img
-              src="/carrom-coin-white.png"
-              alt="White coin"
-              className="absolute left-[48%] top-[42%] h-7 w-7 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(148,163,184,0.9)]"
-            />
-            <img
-              src="/carrom-coin-black.png"
-              alt="Black coin"
-              className="absolute left-[55%] top-[46%] h-7 w-7 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(15,23,42,0.9)]"
-            />
-            <img
-              src="/carrom-coin-white.png"
-              alt="White coin"
-              className="absolute left-[45%] top-[54%] h-7 w-7 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(148,163,184,0.9)]"
-            />
-            <img
-              src="/carrom-coin-black.png"
-              alt="Black coin"
-              className="absolute left-[52%] top-[58%] h-7 w-7 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(15,23,42,0.9)]"
+            {boardCoins.filter((c) => !c.pocketed).map((coin) => {
+              const left = `${coin.position.x * 100}%`;
+              const top = `${coin.position.y * 100}%`;
+              const src =
+                coin.color === "queen"
+                  ? "/carrom-coin-main.png"
+                  : coin.color === "white"
+                  ? "/carrom-coin-white.png"
+                  : "/carrom-coin-black.png";
+              return (
+                <img
+                  key={coin.id}
+                  src={src}
+                  alt={coin.color}
+                  className="absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(15,23,42,0.9)]"
+                  style={{ left, top }}
+                />
+              );
+            })}
+            {/* Striker */}
+            <div
+              className="absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-cyan-300 bg-cyan-200/80 shadow-[0_0_18px_rgba(34,211,238,0.9)]"
+              style={{
+                left: `${striker.position.x * 100}%`,
+                top: `${striker.position.y * 100}%`,
+              }}
             />
           </div>
+          {/* Aiming overlay */}
+          <div className="pointer-events-none absolute inset-0">
+            <div
+              className="pointer-events-none absolute h-32 w-px origin-bottom bg-gradient-to-t from-cyan-300/90 to-transparent"
+              style={{
+                left: `${baselineX * 100}%`,
+                bottom: "8%",
+                transform: `translateX(-50%) rotate(${angleDeg}deg)`,
+              }}
+            />
+          </div>
+        </div>
+        {/* Controls */}
+        <div className="mt-3 flex flex-col gap-2 text-[11px] text-foreground/70">
+          <label className="flex flex-col gap-1">
+            <span>Striker position</span>
+            <input
+              type="range"
+              min={0.15}
+              max={0.85}
+              step={0.01}
+              value={baselineX}
+              onChange={(e) => setBaselineX(parseFloat(e.target.value))}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span>Aim angle</span>
+            <input
+              type="range"
+              min={-150}
+              max={-30}
+              step={1}
+              value={angleDeg}
+              onChange={(e) => setAngleDeg(parseFloat(e.target.value))}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span>Power</span>
+            <input
+              type="range"
+              min={0.2}
+              max={1}
+              step={0.01}
+              value={power}
+              onChange={(e) => setPower(parseFloat(e.target.value))}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={shoot}
+            disabled={!canShoot}
+            className="mt-1 inline-flex w-full items-center justify-center rounded-full bg-cyan px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-900 shadow-md disabled:opacity-50"
+          >
+            Shoot
+          </button>
         </div>
       </div>
     </div>
