@@ -118,7 +118,13 @@ function RoomsContent() {
                 </label>
                 <input
                   className="w-full rounded-lg border border-foreground/20 bg-black/30 px-3 py-2 text-sm text-foreground outline-none focus:border-cyan"
-                  value={presetGame === "tictactoe" ? "Tic Tac Toe" : "Chess"}
+                  value={
+                    presetGame === "tictactoe"
+                      ? "Tic Tac Toe"
+                      : presetGame === "carrom"
+                      ? "Carrom"
+                      : "Chess"
+                  }
                   disabled
                 />
               </div>

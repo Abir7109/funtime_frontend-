@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { games } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
 import TicTacToeBoard from "@/components/TicTacToeBoard";
+import CarromBoard from "@/components/CarromBoard";
 import { ChessStartAnimation } from "@/components/ChessStartAnimation";
 
 export default function PlayGamePreviewPage() {
@@ -83,7 +84,13 @@ export default function PlayGamePreviewPage() {
               Playable demo (local)
             </span>
           </div>
-          {gameKey === "tictactoe" ? <TicTacToeBoard /> : <ChessBoard />}
+          {gameKey === "tictactoe" ? (
+            <TicTacToeBoard />
+          ) : gameKey === "carrom" ? (
+            <CarromBoard />
+          ) : (
+            <ChessBoard />
+          )}
         </div>
       </div>
     </div>
