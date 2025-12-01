@@ -47,7 +47,8 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
   const [squareStyles, setSquareStyles] = useState<Record<string, CSSProperties>>({});
   const [invalidMoveMsg, setInvalidMoveMsg] = useState<string | null>(null);
   const invalidMoveTimeoutRef = useRef<number | null>(null);
-  const isNetworked = Boolean(socket && roomCode);
+  const isSocketConnected = socket?.connected ?? false;
+  const isNetworked = Boolean(socket && roomCode && isSocketConnected);
   // When in a networked room, wait for the server to send the current FEN
   // before rendering the board so it doesn't briefly look "reset" on refresh.
   const [hasSyncedFromServer, setHasSyncedFromServer] = useState<boolean>(() => !isNetworked);
@@ -354,6 +355,17 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
     socket.emit("chess_request_state", roomCode);
   }, [socket, roomCode, isNetworked, hasSyncedFromServer]);
 
+  // If the socket reconnects in a networked game, ask the server to resend the
+  // authoritative state so we recover from any local-only moves made while
+  // offline.
+  useEffect(() => {
+    if (!socket || !roomCode) return;
+    if (!isSocketConnected) return;
+    // Force a fresh sync request on (re)connect.
+    setHasSyncedFromServer(false);
+    socket.emit("chess_request_state", roomCode);
+  }, [socket, roomCode, isSocketConnected]);
+
   const boardOrientation = useMemo<"white" | "black">(
     () => {
       // In a networked game, orient the board so each player sees their own
@@ -415,10 +427,17 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
             animationDurationInMs: 100,
             // Only allow dragging for the player whose color is to move in a
             // networked game. In preview mode (no socket/room), allow
-            // dragging for both sides.
+            // dragging for both sides. If the socket is disconnected, block
+            // dragging so we don't drift away from the server state.
             allowDragging:
               !isGameOver &&
-              (!isNetworked ? true : Boolean(playerColor && playerColor === game.turn())),
+              (!isNetworked
+                ? true
+                : Boolean(
+                    isSocketConnected &&
+                    playerColor &&
+                    playerColor === (game.turn() as TurnColor),
+                  )),
              onSquareClick: ({ square }: { square: string; piece: any | null }) => {
               if (!square) return;
               handleSquareClick(square);
