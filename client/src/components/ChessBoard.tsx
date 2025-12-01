@@ -34,9 +34,11 @@ interface ChessBoardProps {
   roomCode?: string;
   playerColor?: PlayerColor;
   opponentLeft?: boolean;
+  currentUserName?: string;
+  roomPlayers?: { username: string; color: PlayerColor | null }[];
 }
 
-export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft }: ChessBoardProps) {
+export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft, currentUserName, roomPlayers }: ChessBoardProps) {
   const [game, setGame] = useState<Chess>(() => createInitialGame());
   // Start with a fixed value so SSR and initial client render match; adjust in
   // an effect once the window size is known.
@@ -145,6 +147,41 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
 
     return "Drag and drop pieces. Chess rules are enforced by chess.js.";
   }, [chessAny, isGameOver, isInCheck]);
+
+  const { winnerColor, winnerName, isDraw } = useMemo(() => {
+    if (!isGameOver) {
+      return { winnerColor: null as TurnColor | null, winnerName: null as string | null, isDraw: false };
+    }
+
+    const inCheckmate =
+      chessAny.in_checkmate?.() ??
+      chessAny.isCheckmate?.() ??
+      chessAny.isCheckmate?.call?.(chessAny);
+
+    let resolvedWinnerColor: TurnColor | null = null;
+    let draw = false;
+
+    if (inCheckmate) {
+      const loser = chessAny.turn?.() as TurnColor;
+      resolvedWinnerColor = loser === "w" ? "b" : "w";
+    } else {
+      draw = true;
+    }
+
+    let resolvedWinnerName: string | null = null;
+    if (resolvedWinnerColor) {
+      const list = roomPlayers || [];
+      const p = list.find((pl) => pl.color === resolvedWinnerColor);
+      resolvedWinnerName = p?.username ?? (resolvedWinnerColor === "w" ? "White" : "Black");
+    }
+
+    return { winnerColor: resolvedWinnerColor, winnerName: resolvedWinnerName, isDraw: draw };
+  }, [isGameOver, chessAny, roomPlayers]);
+
+  const isLocalWinner = useMemo(() => {
+    if (!winnerColor || !playerColor) return false;
+    return winnerColor === playerColor;
+  }, [winnerColor, playerColor]);
 
   const updateHighlights = (selected: string | null, targets: string[]) => {
     const styles: Record<string, CSSProperties> = {};
@@ -473,11 +510,20 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
         )}
         {isGameOver && (
           <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-            <div className="game-over-pop pointer-events-auto relative mx-4 max-w-xs rounded-3xl bg-black/85 px-5 py-4 text-center shadow-2xl ring-1 ring-white/10">
-              <p className="text-sm font-semibold text-sand">
-                {statusText.startsWith("Checkmate") ? "Checkmate" : "Game over"}
+            <div className="game-over-pop pointer-events-auto relative mx-4 max-w-xs rounded-3xl bg-gradient-to-br from-cyan-400/95 via-sky-500/95 to-emerald-400/95 px-5 py-4 text-center shadow-2xl ring-1 ring-white/40 animate-bounce">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-900/80">
+                {winnerName && !isDraw
+                  ? isLocalWinner && currentUserName
+                    ? "You win"
+                    : "Winner"
+                  : "Game over"}
               </p>
-              <p className="mt-1 text-xs text-foreground/70">
+              {winnerName && !isDraw && (
+                <p className="mt-1 text-lg font-bold text-slate-900">
+                  {winnerName}
+                </p>
+              )}
+              <p className="mt-1 text-[11px] text-slate-900/90">
                 {statusText}
               </p>
             </div>

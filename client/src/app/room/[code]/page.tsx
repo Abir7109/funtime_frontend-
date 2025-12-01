@@ -187,6 +187,8 @@ export default function RoomPage() {
                 roomCode={roomCode}
                 playerColor={playerColor}
                 opponentLeft={opponentLeft}
+                currentUserName={username}
+                roomPlayers={roomPlayers}
               />
             )}
           </div>
