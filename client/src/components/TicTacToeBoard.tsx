@@ -7,6 +7,7 @@ interface TicTacToeBoardProps {
   socket?: Socket | null;
   roomCode?: string;
   playerSymbol?: "X" | "O" | null;
+  playerName?: string;
 }
 
 interface ServerState {
@@ -17,7 +18,7 @@ interface ServerState {
 
 const emptyBoard: ServerState["board"] = Array(9).fill(null);
 
-export default function TicTacToeBoard({ socket, roomCode, playerSymbol }: TicTacToeBoardProps) {
+export default function TicTacToeBoard({ socket, roomCode, playerSymbol, playerName }: TicTacToeBoardProps) {
   const [state, setState] = useState<ServerState>({
     board: emptyBoard,
     next: "X",
@@ -75,12 +76,47 @@ export default function TicTacToeBoard({ socket, roomCode, playerSymbol }: TicTa
     }
   };
 
+  const winningLine = useMemo(() => {
+    if (state.winner !== "X" && state.winner !== "O") return null;
+    const lines = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ];
+    for (const [a, b, c] of lines) {
+      if (
+        state.board[a] === state.winner &&
+        state.board[b] === state.winner &&
+        state.board[c] === state.winner
+      ) {
+        return [a, b, c] as [number, number, number];
+      }
+    }
+    return null;
+  }, [state.board, state.winner]);
+
   const statusText = useMemo(() => {
     if (state.winner === "draw") return "Draw game";
     if (state.winner === "X" || state.winner === "O") return `${state.winner} wins`;
     if (!state.next) return "Game over";
     return `Turn: ${state.next}`;
   }, [state]);
+
+  const winnerMessage = useMemo(() => {
+    if (state.winner === "draw") return "It's a draw. Well played both!";
+    if (state.winner !== "X" && state.winner !== "O") return "";
+    if (!playerSymbol) return `${state.winner} wins this round!`;
+    if (playerSymbol === state.winner) {
+      const name = playerName && playerName.trim().length > 0 ? playerName.trim() : "You";
+      return `${name} win this round!`;
+    }
+    return "You lost this round. Hit reset for a rematch.";
+  }, [state.winner, playerSymbol, playerName]);
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -94,20 +130,21 @@ export default function TicTacToeBoard({ socket, roomCode, playerSymbol }: TicTa
         <div className="grid aspect-square w-full grid-cols-3 gap-2">
           {state.board.map((cell, idx) => {
             const isMine = cell && playerSymbol && cell === playerSymbol;
+            const isWinningCell = winningLine?.includes(idx) ?? false;
             return (
               <button
                 key={idx}
                 type="button"
                 onClick={() => makeMove(idx)}
-                className="flex items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 text-3xl font-black text-sand shadow-md transition hover:from-slate-700 hover:to-slate-800 disabled:opacity-40"
+                className={`flex items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 text-3xl font-black text-sand shadow-md transition hover:from-slate-700 hover:to-slate-800 disabled:opacity-40 ${
+                  isWinningCell ? "ring-2 ring-yellow-400 shadow-yellow-400/70 scale-[1.03]" : ""
+                }`}
                 disabled={Boolean(state.winner || cell)}
               >
                 {cell && (
                   <span
                     className={`drop-shadow-lg ${
-                      cell === "X"
-                        ? "text-cyan-300"
-                        : "text-pink-300"
+                      cell === "X" ? "text-cyan-300" : "text-pink-300"
                     } ${isMine ? "scale-110" : "scale-100"}`}
                   >
                     {cell}
@@ -119,8 +156,9 @@ export default function TicTacToeBoard({ socket, roomCode, playerSymbol }: TicTa
         </div>
         {state.winner && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="pointer-events-auto rounded-2xl bg-black/85 px-4 py-3 text-center text-xs font-semibold text-sand shadow-xl ring-1 ring-white/10">
-              {statusText}
+            <div className="pointer-events-auto mx-4 max-w-xs animate-[bounce_1.1s_ease-out_1] rounded-3xl bg-gradient-to-r from-yellow-400/90 via-amber-300/95 to-pink-400/90 px-5 py-4 text-center text-xs font-semibold text-slate-900 shadow-[0_0_40px_rgba(250,204,21,0.8)] ring-1 ring-yellow-200/80">
+              <div className="mb-1 text-lg">✨ {statusText} ✨</div>
+              <div className="text-[11px] font-medium">{winnerMessage}</div>
             </div>
           </div>
         )}

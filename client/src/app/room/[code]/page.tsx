@@ -158,7 +158,12 @@ export default function RoomPage() {
             </div>
 
             {gameKey === "tictactoe" ? (
-              <TicTacToeBoard socket={socket} roomCode={roomCode} playerSymbol={tttSymbol} />
+              <TicTacToeBoard
+                socket={socket}
+                roomCode={roomCode}
+                playerSymbol={tttSymbol}
+                playerName={username}
+              />
             ) : playerColor === null ? (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-orange/40 bg-orange/10 px-6 py-10 text-center">
                 <p className="text-sm font-semibold text-orange">
