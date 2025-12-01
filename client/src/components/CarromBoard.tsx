@@ -9,6 +9,8 @@ interface CarromBoardProps {
   roomCode?: string;
 }
 
+const STRIKER_BASELINE_Y = 0.86;
+
 export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
   const [state, setState] = useState<CarromBoardState | null>(null);
   const [baselineX, setBaselineX] = useState(0.5);
@@ -43,7 +45,7 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
   }, [state]);
 
   const boardCoins = state?.coins ?? [];
-  const striker = state?.striker ?? { position: { x: baselineX, y: 0.9 }, radius: 0 };
+  const striker = state?.striker ?? { position: { x: baselineX, y: STRIKER_BASELINE_Y }, radius: 0 };
 
   const scoresLabel = useMemo(() => {
     if (!state) return "";
@@ -63,10 +65,11 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
     const rect = boardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    // Only start drag near bottom baseline.
-    if (y < 0.75) return;
-    setBaselineX(Math.min(0.85, Math.max(0.15, x)));
-    setDragStart({ x, y });
+    // Only start drag close to the striker baseline at the bottom.
+    if (y < STRIKER_BASELINE_Y - 0.08) return;
+    const clampedX = Math.min(0.85, Math.max(0.15, x));
+    setBaselineX(clampedX);
+    setDragStart({ x: clampedX, y: STRIKER_BASELINE_Y });
     setDragCurrent({ x, y });
   };
 
@@ -85,7 +88,7 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
       return;
     }
     const baseX = baselineX;
-    const baseY = 0.9;
+    const baseY = STRIKER_BASELINE_Y;
     const dx = dragCurrent.x - baseX;
     const dy = dragCurrent.y - baseY;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -111,7 +114,7 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
 
   const aimingLine = useMemo(() => {
     if (!dragStart || !dragCurrent) return null;
-    const baseY = 0.9;
+    const baseY = STRIKER_BASELINE_Y;
     const dx = dragCurrent.x - baselineX;
     const dy = dragCurrent.y - baseY;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -194,7 +197,7 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
                 className="pointer-events-none absolute w-px origin-bottom bg-gradient-to-t from-cyan-300/90 to-transparent"
                 style={{
                   left: `${baselineX * 100}%`,
-                  bottom: "8%",
+                  bottom: `${(1 - STRIKER_BASELINE_Y) * 100}%`,
                   height: `${aimingLine.length * 100}%`,
                   transform: `translateX(-50%) rotate(${aimingLine.angle}deg)`,
                 }}
