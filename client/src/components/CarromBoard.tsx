@@ -9,7 +9,7 @@ interface CarromBoardProps {
   roomCode?: string;
 }
 
-const STRIKER_BASELINE_Y = 0.86;
+const STRIKER_BASELINE_Y = 0.8;
 
 export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
   const [state, setState] = useState<CarromBoardState | null>(null);
@@ -61,12 +61,12 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
   }, [state]);
 
   const handlePointerDown: React.PointerEventHandler<HTMLDivElement> = (e) => {
-    if (!canShoot || !boardRef.current) return;
+    if (!boardRef.current) return;
     const rect = boardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
     // Only start drag close to the striker baseline at the bottom.
-    if (y < STRIKER_BASELINE_Y - 0.08) return;
+    if (Math.abs(y - STRIKER_BASELINE_Y) > 0.12) return;
     const clampedX = Math.min(0.85, Math.max(0.15, x));
     setBaselineX(clampedX);
     setDragStart({ x: clampedX, y: STRIKER_BASELINE_Y });
@@ -158,7 +158,8 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
           <img
             src="/carrom-board.jpg"
             alt="Carrom board"
-            className="h-full w-full object-cover"
+            draggable={false}
+            className="h-full w-full object-cover pointer-events-none select-none"
           />
           {/* Coins */}
           <div className="pointer-events-none absolute inset-0">
@@ -176,6 +177,7 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
                   key={coin.id}
                   src={src}
                   alt={coin.color}
+                  draggable={false}
                   className="absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(15,23,42,0.9)]"
                   style={{ left, top }}
                 />
