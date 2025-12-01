@@ -47,14 +47,9 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
 
   const dropDisc = (col: number) => {
     if (state.winner) return;
-
-    if (isNetworked) {
-      if (!socket || !roomCode) return;
-      socket.emit("connect4_move", roomCode, col);
-      return;
-    }
-
     if (col < 0 || col >= WIDTH) return;
+
+    // Always update locally for an instant response.
     const board = state.board.slice();
     let placedRow: number | null = null;
     for (let row = 0; row < HEIGHT; row++) {
@@ -73,6 +68,11 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
       next: winner ? null : state.next === "R" ? "Y" : "R",
       winner,
     });
+
+    // In a networked room, also notify the server so the other player stays in sync.
+    if (isNetworked && socket && roomCode) {
+      socket.emit("connect4_move", roomCode, col);
+    }
   };
 
   const handleReset = () => {
@@ -148,8 +148,8 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
           <span>{isNetworked ? "Online room" : "Local preview"}</span>
         </div>
         <div className="relative aspect-[7/6] w-full rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-2">
-          {/* Clickable columns */}
-          <div className="absolute inset-0 grid grid-cols-7">
+          {/* Clickable columns (sit on top of discs) */}
+          <div className="absolute inset-0 z-10 grid grid-cols-7">
             {Array.from({ length: WIDTH }).map((_, col) => (
               <button
                 key={col}
@@ -162,8 +162,8 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
               </button>
             ))}
           </div>
-          {/* Grid discs */}
-          <div className="relative grid h-full grid-cols-7 grid-rows-6 gap-1">
+          {/* Grid discs (allow clicks to fall through to column buttons above) */}
+          <div className="relative grid h-full grid-cols-7 grid-rows-6 gap-1 pointer-events-none">
             {Array.from({ length: HEIGHT })
               .map((_, row) => row)
               .reverse()
