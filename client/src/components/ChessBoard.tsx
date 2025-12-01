@@ -253,18 +253,22 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
       return;
     }
 
-    // In a networked game, let the server be authoritative for state.
-    // We just emit the move and wait for a chess_position update to adjust
-    // our local board. In local/preview mode, we can update immediately.
+    // Clear selection + highlights.
     setSelectedSquare(null);
     setLegalTargets([]);
     updateHighlights(null, []);
 
+    // Optimistically update the local board immediately for a smooth feel,
+    // then let the server keep us in sync via chess_position events.
+    setGame(gameCopy);
+    setTurn(gameCopy.turn() as TurnColor);
+
     if (socket && roomCode) {
-      socket.emit("chess_move", roomCode, { from: selectedSquare, to: square, promotion: "q" });
-    } else {
-      setGame(gameCopy);
-      setTurn(gameCopy.turn() as TurnColor);
+      socket.emit("chess_move", roomCode, {
+        from: selectedSquare,
+        to: square,
+        promotion: "q",
+      });
     }
   };
 
@@ -295,11 +299,16 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
     setLegalTargets([]);
     updateHighlights(null, []);
 
+    // Optimistically update the local board so the piece snaps instantly.
+    setGame(gameCopy);
+    setTurn(gameCopy.turn() as TurnColor);
+
     if (socket && roomCode) {
-      socket.emit("chess_move", roomCode, { from: source, to: target, promotion: "q" });
-    } else {
-      setGame(gameCopy);
-      setTurn(gameCopy.turn() as TurnColor);
+      socket.emit("chess_move", roomCode, {
+        from: source,
+        to: target,
+        promotion: "q",
+      });
     }
 
     return true;
@@ -310,12 +319,13 @@ export default function ChessBoard({ socket, roomCode, playerColor, opponentLeft
     setLegalTargets([]);
     updateHighlights(null, []);
 
+    // Reset local board immediately for responsiveness.
+    const fresh = createInitialGame();
+    setGame(fresh);
+    setTurn("w");
+
     if (socket && roomCode) {
       socket.emit("chess_reset", roomCode);
-    } else {
-      const fresh = createInitialGame();
-      setGame(fresh);
-      setTurn("w");
     }
   };
 
