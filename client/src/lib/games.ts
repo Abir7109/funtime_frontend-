@@ -9,6 +9,7 @@ export interface GameConfig {
   players: string;
   time: string;
   accent: string;
+  thumbnailLine: string;
 }
 
 export const games: GameConfig[] = [
@@ -21,6 +22,7 @@ export const games: GameConfig[] = [
     players: "2 players",
     time: "30–60 min",
     accent: "from-sky to-cyan",
+    thumbnailLine: "Beautiful, clear board with real-time updates.",
   },
   {
     key: "tictactoe",
@@ -31,5 +33,6 @@ export const games: GameConfig[] = [
     players: "2 players",
     time: "2–5 min",
     accent: "from-fuchsia to-purple",
+    thumbnailLine: "Neon 3×3 grid with glowing X and O highlights.",
   },
 ];

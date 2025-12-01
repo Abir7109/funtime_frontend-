@@ -47,7 +47,7 @@ export default function GamesPage() {
                       {game.badge}
                     </span>
                     <p className="mt-3 max-w-[11rem] text-xs text-white/90">
-                      Beautiful, clear board with real-time updates.
+                      {game.thumbnailLine}
                     </p>
                   </div>
                   <div className="relative flex h-full flex-1 items-center justify-center">
