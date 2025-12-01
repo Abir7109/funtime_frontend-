@@ -51,30 +51,10 @@ export default function GamesPage() {
                     </p>
                   </div>
                   <div className="relative flex h-full flex-1 items-center justify-center">
-                    <div
-                      className={`h-24 w-24 rounded-3xl shadow-[0_18px_40px_rgba(15,23,42,0.4)] backdrop-blur-sm ${
-                        game.key === "tictactoe"
-                          ? "bg-black/10 border border-pink-300/70 shadow-pink-500/60"
-                          : "bg-black/20"
-                      }`}
-                    >
-                      {game.key === "tictactoe" ? (
-                        <div className="grid h-full w-full grid-cols-3 gap-[2px] p-2 text-2xl">
-                          <span className="flex items-center justify-center text-cyan-300">X</span>
-                          <span className="flex items-center justify-center text-pink-300">O</span>
-                          <span className="flex items-center justify-center text-cyan-300">X</span>
-                          <span className="flex items-center justify-center text-pink-300">O</span>
-                          <span className="flex items-center justify-center text-cyan-300">X</span>
-                          <span className="flex items-center justify-center text-pink-300">O</span>
-                          <span className="flex items-center justify-center text-pink-300">O</span>
-                          <span className="flex items-center justify-center text-cyan-300">X</span>
-                          <span className="flex items-center justify-center text-pink-300">O</span>
-                        </div>
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-5xl">
-                          {game.icon}
-                        </div>
-                      )}
+                    <div className="h-24 w-24 rounded-3xl bg-black/20 shadow-[0_18px_40px_rgba(15,23,42,0.4)] backdrop-blur-sm">
+                      <div className="flex h-full w-full items-center justify-center text-5xl">
+                        {game.icon}
+                      </div>
                     </div>
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35)_0,_transparent_45%)]" />
                   </div>
