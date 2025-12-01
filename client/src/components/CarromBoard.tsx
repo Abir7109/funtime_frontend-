@@ -24,11 +24,15 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
       setState(s);
     };
 
-    socket.emit("carrom_request_state", roomCode);
+    const request = () => socket.emit("carrom_request_state", roomCode);
+
+    request();
     socket.on("carrom_state", handleState);
+    socket.on("connect", request);
 
     return () => {
       socket.off("carrom_state", handleState);
+      socket.off("connect", request);
     };
   }, [socket, roomCode, isNetworked]);
 
@@ -50,6 +54,19 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
   const boardCoins = state?.coins ?? [];
   const striker = state?.striker ?? { position: { x: 0.5, y: 0.1 }, radius: 0 };
 
+  const scoresLabel = useMemo(() => {
+    if (!state) return "";
+    const a = state.players["A"];
+    const b = state.players["B"];
+    return `${a.username || "A"}: ${a.score} • ${b.username || "B"}: ${b.score}`;
+  }, [state]);
+
+  const winnerLabel = useMemo(() => {
+    if (!state || !state.winnerPlayer) return "";
+    const p = state.players[state.winnerPlayer];
+    return `${p.username || state.winnerPlayer} wins the board!`;
+  }, [state]);
+
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex w-full max-w-md items-center justify-between text-xs text-foreground/70">
@@ -59,7 +76,22 @@ export default function CarromBoard({ socket, roomCode }: CarromBoardProps) {
         </span>
       </div>
       <div className="relative mx-auto w-full max-w-md rounded-3xl border border-foreground/20 bg-black/60 p-3 shadow-inner">
+        {state && (
+          <div className="mb-2 flex items-center justify-between text-[10px] text-foreground/60">
+            <span>{scoresLabel}</span>
+            <span>
+              Board {state.boardNumber} / {state.maxBoards}
+            </span>
+          </div>
+        )}
         <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-2xl bg-black/80">
+          {winnerLabel && (
+            <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center">
+              <div className="pointer-events-auto rounded-full bg-emerald-500/90 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-900 shadow-lg shadow-emerald-500/60">
+                {winnerLabel}
+              </div>
+            </div>
+          )}
           <img
             src="/carrom-board.jpg"
             alt="Carrom board"

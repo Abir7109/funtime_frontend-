@@ -166,7 +166,7 @@ export default function RoomPage() {
                 playerName={username}
               />
             ) : gameKey === "carrom" ? (
-              <CarromBoard />
+              <CarromBoard socket={socket} roomCode={roomCode} />
             ) : playerColor === null ? (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-orange/40 bg-orange/10 px-6 py-10 text-center">
                 <p className="text-sm font-semibold text-orange">
