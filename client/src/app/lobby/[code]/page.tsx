@@ -25,8 +25,9 @@ export default function LobbyPage() {
   useEffect(() => {
     if (!socket || !connected || !roomCode) return;
 
-    // Host or guest joins the room here; we attach the username from the previous step.
-    socket.emit("join_room", roomCode, initialUsername);
+    // Host or guest joins the room here; we attach the username from the previous step
+    // and the game key so the server can know which game this room is for.
+    socket.emit("join_room", roomCode, initialUsername, gameKey);
 
     socket.on("room_players", (list: RoomPlayer[]) => {
       setPlayers(list);

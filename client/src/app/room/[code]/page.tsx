@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
+import { type GameKey } from "@/lib/games";
 import ChessBoard from "@/components/ChessBoard";
 import TicTacToeBoard from "@/components/TicTacToeBoard";
 import ConnectFourBoard from "@/components/ConnectFourBoard";
@@ -24,13 +25,14 @@ export default function RoomPage() {
   const searchParams = useSearchParams();
   const roomCode = (params.code as string)?.toUpperCase() || "";
   const fromQuery = (searchParams.get("username") || "").trim();
-  const initialGameKey = (searchParams.get("game") || "chess").trim();
+  const initialGameKey = (searchParams.get("game") || "chess").trim() as GameKey;
   const { socket, connected } = useSocket();
+
+  const [gameKey, setGameKey] = useState<GameKey>(initialGameKey);
 
   const [username] = useState(
     () => fromQuery || "Player" + Math.floor(Math.random() * 1000),
   );
-  const [gameKey, setGameKey] = useState(initialGameKey);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [systemMsg, setSystemMsg] = useState("");
@@ -46,28 +48,29 @@ export default function RoomPage() {
   useEffect(() => {
     if (!socket || !connected || !roomCode) return;
 
-    socket.emit("join_room", roomCode, username);
+    socket.emit("join_room", roomCode, username, gameKey);
+
+    // The URL `game` param is the user's explicit choice (e.g. "connect4").
+    // Prefer it over any server suggestion when they disagree, so a Connect Four
+    // room never accidentally shows a Tic Tac Toe board.
+    socket.on("room_game", ({ game }: { game: GameKey }) => {
+      const resolved: GameKey =
+        initialGameKey !== "chess" && game !== initialGameKey
+          ? initialGameKey
+          : game;
+      setGameKey(resolved);
+    });
 
     socket.on("chess_role", ({ color }: { color: "w" | "b" | null }) => {
       setPlayerColor(color ?? null);
-      // If we have no explicit game key yet, default to chess when a chess role is assigned.
-      if (!initialGameKey && color) {
-        setGameKey("chess");
-      }
     });
 
     socket.on("tictactoe_role", ({ symbol }: { symbol: "X" | "O" | null }) => {
       setTttSymbol(symbol ?? null);
-      if (symbol) {
-        setGameKey("tictactoe");
-      }
     });
 
     socket.on("connect4_role", ({ symbol }: { symbol: "R" | "Y" | null }) => {
       setC4Symbol(symbol ?? null);
-      if (symbol) {
-        setGameKey("connect4");
-      }
     });
 
     // Ludo roles are no longer used since Ludo game was removed.
@@ -86,6 +89,7 @@ export default function RoomPage() {
     });
 
     return () => {
+      socket.off("room_game");
       socket.off("chess_role");
       socket.off("tictactoe_role");
       socket.off("connect4_role");
@@ -94,7 +98,7 @@ export default function RoomPage() {
       socket.off("chat");
       socket.off("room_players");
     };
-  }, [socket, connected, roomCode, username, initialGameKey]);
+  }, [socket, connected, roomCode, username, gameKey, initialGameKey]);
 
   // Detect when the other player leaves during a game.
   useEffect(() => {
