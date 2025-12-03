@@ -49,7 +49,16 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
     if (state.winner) return;
     if (col < 0 || col >= WIDTH) return;
 
-    // Always update locally for an instant response.
+    // In an online room, let the server be the authority and enforce turns.
+    if (isNetworked) {
+      if (!socket || !roomCode) return;
+      if (!playerSymbol) return; // spectators can't move
+      if (state.next !== playerSymbol) return; // not your turn
+      socket.emit("connect4_move", roomCode, col);
+      return;
+    }
+
+    // Local preview mode: update board immediately.
     const board = state.board.slice();
     let placedRow: number | null = null;
     for (let row = 0; row < HEIGHT; row++) {
@@ -68,11 +77,6 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
       next: winner ? null : state.next === "R" ? "Y" : "R",
       winner,
     });
-
-    // In a networked room, also notify the server so the other player stays in sync.
-    if (isNetworked && socket && roomCode) {
-      socket.emit("connect4_move", roomCode, col);
-    }
   };
 
   const handleReset = () => {
