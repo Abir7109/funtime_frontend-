@@ -117,9 +117,12 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
       cell === "R" ? "bg-red-400" : cell === "Y" ? "bg-yellow-300" : "bg-slate-800/80";
 
     return (
-      <div
+      <button
         key={`${col}-${row}`}
+        type="button"
+        onClick={() => dropDisc(col)}
         className="flex items-center justify-center"
+        disabled={Boolean(state.winner)}
       >
         <div
           className={`h-8 w-8 rounded-full border border-slate-900/60 shadow-inner transition-transform ${
@@ -130,7 +133,7 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
               : "bg-slate-900/60"
           }`}
         />
-      </div>
+      </button>
     );
   };
 
@@ -148,22 +151,8 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
           <span>{isNetworked ? "Online room" : "Local preview"}</span>
         </div>
         <div className="relative aspect-[7/6] w-full rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-2">
-          {/* Clickable columns (sit on top of discs) */}
-          <div className="absolute inset-0 z-10 grid grid-cols-7">
-            {Array.from({ length: WIDTH }).map((_, col) => (
-              <button
-                key={col}
-                type="button"
-                onClick={() => dropDisc(col)}
-                className="group relative flex cursor-pointer flex-col justify-start bg-transparent/0"
-                disabled={Boolean(state.winner)}
-              >
-                <div className="pointer-events-none mx-auto mb-1 h-1.5 w-5 rounded-full bg-cyan-400/70 opacity-0 transition group-hover:opacity-100" />
-              </button>
-            ))}
-          </div>
-          {/* Grid discs (allow clicks to fall through to column buttons above) */}
-          <div className="relative grid h-full grid-cols-7 grid-rows-6 gap-1 pointer-events-none">
+          {/* Grid discs (each cell is clickable for its column) */}
+          <div className="relative grid h-full grid-cols-7 grid-rows-6 gap-1">
             {Array.from({ length: HEIGHT })
               .map((_, row) => row)
               .reverse()
