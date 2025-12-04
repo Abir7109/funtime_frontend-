@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Socket } from "socket.io-client";
 
 interface ConnectFourBoardProps {
@@ -22,6 +22,11 @@ const HEIGHT = 6;
 
 export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playerName }: ConnectFourBoardProps) {
   const [state, setState] = useState<ServerState>({ board: EMPTY_BOARD, next: "R", winner: null });
+  const [lastMoveIndex, setLastMoveIndex] = useState<number | null>(null);
+
+  // Keep a ref of the previous board so we can detect which disc just appeared
+  // when receiving state from the server, and animate that disc dropping in.
+  const previousBoardRef = useRef<ServerState["board"]>(EMPTY_BOARD);
 
   const isNetworked = Boolean(socket && roomCode);
 
@@ -30,8 +35,33 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
 
     const handleState = (s: ServerState) => {
       if (!s || !Array.isArray(s.board)) return;
+      const nextBoard = s.board as ServerState["board"];
+      const prevBoard = previousBoardRef.current;
+
+      let newMoveIndex: number | null = null;
+
+      if (nextBoard.length === prevBoard.length) {
+        for (let i = 0; i < nextBoard.length; i++) {
+          if (prevBoard[i] !== nextBoard[i]) {
+            // A fresh disc appeared in this cell; treat it as the animated move.
+            if (prevBoard[i] == null && nextBoard[i] != null) {
+              newMoveIndex = i;
+            }
+          }
+        }
+      }
+
+      previousBoardRef.current = nextBoard.slice();
+
+      // If the board was wiped (remote reset), clear any last-move animation.
+      if (nextBoard.every((c) => c == null)) {
+        setLastMoveIndex(null);
+      } else {
+        setLastMoveIndex(newMoveIndex);
+      }
+
       setState({
-        board: s.board as ServerState["board"],
+        board: nextBoard,
         next: s.next,
         winner: s.winner,
       });
@@ -58,18 +88,23 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
       return;
     }
 
-    // Local preview mode: update board immediately.
+    // Local preview mode: update board immediately with a falling disc animation.
     const board = state.board.slice();
     let placedRow: number | null = null;
+    let placedIndex: number | null = null;
     for (let row = 0; row < HEIGHT; row++) {
       const idx = col * HEIGHT + row;
       if (!board[idx]) {
         board[idx] = state.next;
         placedRow = row;
+        placedIndex = idx;
         break;
       }
     }
-    if (placedRow == null) return; // column full
+    if (placedRow == null || placedIndex == null) return; // column full
+
+    previousBoardRef.current = board.slice();
+    setLastMoveIndex(placedIndex);
 
     const winner = computeLocalWinner(board);
     setState({
@@ -83,6 +118,8 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
     if (isNetworked && socket && roomCode) {
       socket.emit("connect4_reset", roomCode);
     } else {
+      previousBoardRef.current = EMPTY_BOARD.slice();
+      setLastMoveIndex(null);
       setState({ board: EMPTY_BOARD, next: "R", winner: null });
     }
   };
@@ -116,6 +153,7 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
     const cell = state.board[idx];
     const isWinning = winningCells?.includes(idx) ?? false;
     const isMine = cell && playerSymbol && cell === playerSymbol;
+    const isLastMove = lastMoveIndex === idx;
 
     const baseColor =
       cell === "R" ? "bg-red-400" : cell === "Y" ? "bg-yellow-300" : "bg-slate-800/80";
@@ -135,14 +173,15 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
                   isWinning ? "ring-2 ring-emerald-300 shadow-emerald-400/70" : ""
                 }`
               : "bg-slate-900/60"
-          }`}
+          } ${isLastMove ? "c4-drop-bounce" : ""}`}
         />
       </button>
     );
   };
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <>
+      <div className="flex flex-col items-center gap-3">
       <div className="flex w-full max-w-sm items-center justify-between text-xs text-foreground/70">
         <span>Connect Four</span>
         <span className="inline-flex items-center rounded-full bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">
@@ -182,7 +221,28 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
       >
         Reset board
       </button>
-    </div>
+      </div>
+      <style jsx>{`
+        @keyframes c4-drop-bounce-anim {
+          0% {
+            transform: translateY(-160%) scale(0.9);
+          }
+          65% {
+            transform: translateY(8%) scale(1.05);
+          }
+          82% {
+            transform: translateY(-4%) scale(0.97);
+          }
+          100% {
+            transform: translateY(0%) scale(1);
+          }
+        }
+
+        .c4-drop-bounce {
+          animation: c4-drop-bounce-anim 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+        }
+      `}</style>
+    </>
   );
 }
 
