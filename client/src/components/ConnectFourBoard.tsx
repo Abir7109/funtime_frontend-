@@ -222,26 +222,6 @@ export default function ConnectFourBoard({ socket, roomCode, playerSymbol, playe
         Reset board
       </button>
       </div>
-      <style jsx>{`
-        @keyframes c4-drop-bounce-anim {
-          0% {
-            transform: translateY(-160%) scale(0.9);
-          }
-          65% {
-            transform: translateY(8%) scale(1.05);
-          }
-          82% {
-            transform: translateY(-4%) scale(0.97);
-          }
-          100% {
-            transform: translateY(0%) scale(1);
-          }
-        }
-
-        .c4-drop-bounce {
-          animation: c4-drop-bounce-anim 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
-        }
-      `}</style>
     </>
   );
 }
