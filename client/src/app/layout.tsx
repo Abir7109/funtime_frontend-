@@ -18,6 +18,27 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Fun Together",
   description: "Play. Chill. Win. Together.",
+  openGraph: {
+    title: "Fun Together",
+    description: "Play. Chill. Win. Together.",
+    url: "/",
+    siteName: "Fun Together",
+    images: [
+      {
+        url: "/metalogo.png",
+        width: 1200,
+        height: 630,
+        alt: "Fun Together – Play classic games with friends online",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fun Together",
+    description: "Play. Chill. Win. Together.",
+    images: ["/metalogo.png"],
+  },
 };
 
 export default function RootLayout({
