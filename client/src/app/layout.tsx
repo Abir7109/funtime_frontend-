@@ -18,6 +18,10 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Fun Together",
   description: "Play. Chill. Win. Together.",
+  // Facebook recommends fb:app_id; using a placeholder here removes the warning in their debugger.
+  other: {
+    "fb:app_id": "0",
+  },
   openGraph: {
     title: "Fun Together",
     description: "Play. Chill. Win. Together.",
